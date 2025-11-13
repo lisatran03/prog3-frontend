@@ -1,35 +1,237 @@
-@import './base.css';
+/*******************************************************
+ * TEIL 1 — Basis: Variablen, Container, kleine Resets
+ *******************************************************/
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
+/* Farb- und Layout-Variablen, die wir überall nutzen */
+:root{
+  --ink:#0f172a;             /* Haupttext (dunkel) */
+  --bg:#fafafa;              /* Seitenhintergrund */
+  --muted:#5b6473;           /* Sekundärtext */
+  --line:#e6e6ef;            /* zarte Linien / Rahmen */
+
+  /* Marken-Farben für weiche Verläufe im Hero */
+  --brand1:#60a5fa;          /* Blau */
+  --brand2:#a78bfa;          /* Lila */
+  --brand3:#f472b6;          /* Pink */
+
+  /* Kategorien-Farben (Pillen auf den Karten) */
+  --starter:#16a34a;         /* Vorspeise */
+  --main:#d97706;            /* Hauptgericht */
+  --dessert:#dc2626;         /* Dessert */
+  --vegan:#059669;           /* Vegan */
+
+  /* Seitlicher CTA-Button (rechts) */
+  --cta-bg:#111827;
+  --cta-fg:#ffffff;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
+/* leichte Resets + Grundschrift */
+*{ box-sizing:border-box; }
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.5;
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+/* zentrale Spaltenbreite + Innenabstand */
+.container{
+  max-width:1200px;
+  margin:0 auto;
+  padding: 0 1.25rem;
 }
 
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
+/*******************************************************
+ * TEIL 2 — Seitlicher CTA (rechts): gut lesbar
+ *******************************************************/
+.side-cta{
+  position:fixed;
+  right:16px;               /* Abstand zum rechten Rand */
+  top:50%;
+  transform:translateY(-50%); /* vertikal zentriert */
+  z-index:50;
 
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
+  /* Optik */
+  background: linear-gradient(180deg, #1f2937, #111827); /* dunkler Verlauf */
+  color:#fff;
+  padding:.75rem .65rem;
+  border-radius:.9rem;
+  text-decoration:none;
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:0 12px 28px rgba(17,24,39,.35);
+  font-weight:700;
+  letter-spacing:.3px;
+  text-shadow:0 1px 2px rgba(0,0,0,.45); /* bessere Lesbarkeit auf Farbflächen */
+}
+.side-cta:hover{
+  transform:translateY(-50%) scale(1.03);
+  box-shadow:0 14px 34px rgba(17,24,39,.45);
+  filter:saturate(1.1);
+}
+
+/*******************************************************
+ * TEIL 3 — HERO (bunt, aber bewusst kompakt)
+ *******************************************************/
+.hero{
+  position:relative;
+  /* Weiche Farbflecken + Verlauf, ohne zu viel Höhe einzunehmen */
+  background:
+    radial-gradient(900px 420px at 12% 12%, rgba(96,165,250,.35), transparent 60%),
+    radial-gradient(900px 420px at 88% 8%, rgba(167,139,250,.35), transparent 60%),
+    linear-gradient(135deg, rgba(244,114,182,.18), rgba(167,139,250,.16) 60%, rgba(96,165,250,.16));
+  overflow:hidden;
+}
+
+/* Innenabstände klein: Titel + Suchzeile sind dicht beieinander */
+.hero__inner{ padding: .6rem 1.25rem .35rem; }
+
+/* Titel + Untertitel */
+.branding h1{
+  margin:0 0 .2rem;
+  font-size: clamp(1.2rem, .9rem + 1.2vw, 1.6rem); /* passt sich der Breite an */
+}
+.branding p{
+  margin:.05rem 0 .55rem;
+  color:var(--muted);
+}
+
+/* Such-/Filterzone: 2 Spalten = [Suche] [Dropdown] */
+.search-panel{
+  display:grid;
+  gap:.6rem;
+  grid-template-columns: 1fr 210px; /* links flexibel, rechts fix */
+}
+
+/* kleine Feldgruppen mit Label + Input */
+.field{ display:grid; gap:.35rem; }
+.field label{
+  font-size:.9rem; color:#243045; font-weight:600;
+}
+.input,.select{
+  width:100%;
+  padding:.55rem .7rem;
+  border:1px solid #cfd3e1;
+  border-radius:.6rem;
+  background:#fff;
+  box-shadow:0 1px 0 rgba(0,0,0,.02);
+}
+.input:focus,.select:focus{
+  outline:none;
+  border-color:#7c3aed;                         /* lila Fokus */
+  box-shadow:0 0 0 3px rgba(124,58,237,.22);    /* Fokus-Ring */
+}
+
+/* Wellenabschluss unter dem Hero */
+.hero__wave{ display:block; width:100%; height:36px; margin-top:.25rem; }
+.hero__wave path{ fill:#fff; opacity:.96; }
+
+/*******************************************************
+ * TEIL 4 — Karten-Übersicht: direkt unter dem Hero
+ *******************************************************/
+.main{
+  margin-top: -12px;    /* hebt die Karten näher an den Hero */
+  padding-top: .25rem;
+  padding-bottom: 1.2rem;
+}
+
+/* Responsives Grid: so viele Spalten wie möglich, min. 210px */
+.cards{
+  display:grid;
+  gap:1.0rem;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+}
+
+/* einzelne Rezeptkarte */
+.card{
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:1rem;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  transition: transform .18s ease, box-shadow .18s ease;
+  box-shadow: 0 1px 0 rgba(0,0,0,.02);
+}
+.card:hover{
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px rgba(88,92,133,.15);
+}
+
+/* Bildbereich mit Kategorie-Pill */
+.card__media-wrap{ position:relative; }
+.card__media{
+  width:100%;
+  aspect-ratio: 16/9;   /* einheitliche Bildhöhe */
+  object-fit:cover;      /* Beschneidet ohne Verzerren */
+  background:#f5f6fb;    /* Platzhalter-Hintergrund */
+}
+
+/* farbige Kategorie-Pill oben links auf dem Bild */
+.pill{
+  position:absolute; left:10px; top:10px;
+  padding:.28rem .6rem;
+  border-radius:999px;
+  font-size:.8rem; color:#fff; font-weight:700;
+  text-shadow:0 1px 1px rgba(0,0,0,.35);
+  border:1px solid rgba(255,255,255,.35);
+  box-shadow:0 4px 10px rgba(0,0,0,.18);
+}
+.pill--starter{ background: linear-gradient(90deg, var(--starter), #22c55e); }
+.pill--main{    background: linear-gradient(90deg, var(--main), #f59e0b); }
+.pill--dessert{ background: linear-gradient(90deg, var(--dessert), #ef4444); }
+.pill--vegan{   background: linear-gradient(90deg, var(--vegan), #34d399); }
+
+/* Textbereich der Karte */
+.card__body{
+  padding:.9rem 1rem;
+  display:grid; gap:.5rem;
+}
+.card__title{ margin:0; font-size:1.05rem; line-height:1.28; }
+.card__meta{ margin:0; color:var(--muted); font-size:.93rem; }
+
+/* Buttons (z. B. „Ansehen“) */
+.btn{
+  appearance:none;
+  border-radius:.8rem;
+  padding:.58rem .95rem;
+  cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; gap:.4rem;
+  border:1px solid #c9cbe0;
+  background: linear-gradient(180deg, #fff, #f7f8ff);
+  font-weight:600; color: var(--ink);
+}
+.btn:hover{
+  border-color:#7c3aed;
+  box-shadow:0 0 0 3px rgba(124,58,237,.18);
+}
+.btn-ghost{ background:transparent; border:1px solid #c9cbe0; }
+
+/*******************************************************
+ * TEIL 5 — Dialog (Detailansicht)
+ *******************************************************/
+.dialog{ border:none; border-radius:1rem; padding:0; max-width:min(820px,95vw); }
+.dialog__header,.dialog__footer{ padding: 1rem 1.25rem; }
+.dialog__body{ padding: 0 1.25rem 1.25rem; }
+.dialog__header{ border-bottom:1px solid var(--line); }
+.dialog__footer{ border-top:1px solid var(--line); display:flex; justify-content:flex-end; }
+.dialog__title{ margin:0; }
+
+/* zwei Spalten ab mittlerer Breite */
+.two-col{ display:grid; gap:1rem; grid-template-columns:1fr; }
+@media (min-width: 860px){ .two-col{ grid-template-columns: 1fr 1fr; } }
+
+.figure{ margin:0; }
+.figure__img{ width:100%; border-radius:.9rem; aspect-ratio:16/9; object-fit:cover; }
+.meta{ display:flex; gap:.5rem; flex-wrap:wrap; color:var(--muted); margin-top:.5rem; }
+.badge{ border:1px solid var(--line); border-radius:999px; padding:.18rem .55rem; font-size:.82rem; }
+
+/*******************************************************
+ * TEIL 6 — Footer
+ *******************************************************/
+.footer{
+  text-align:center;
+  color:var(--muted);
+  font-size:.92rem;
+  margin: 1.1rem 0 1.6rem;
 }
