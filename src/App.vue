@@ -58,6 +58,9 @@
       </svg>
     </header>
 
+    <router-view />
+
+
     <!--
       HAUPT-INHALT: direkt unter dem Hero (kleiner negativer Rand in CSS)
       - ein responsives Grid aus Rezeptkarten

@@ -4,7 +4,7 @@
     <h2>Rezepte</h2>
     <ul>
       <li v-for="recipe in recipes" :key="recipe.name">
-        {{ recipe.name }} - {{ recipe.type }}
+        {{ recipe.name }} - {{ recipe.ingredients }} - {{ recipe.instructions }}
       </li>
     </ul>
   </main>
@@ -17,7 +17,7 @@ import { getRecipes } from "../api";
 
 interface Recipe {
   name: string;
-  type: string;
+  category: string;
   ingredients: string;
   instructions: string;
 }
@@ -25,6 +25,7 @@ interface Recipe {
 const recipes = ref<Recipe[]>([]);
 
 onMounted(() => {
+
   getRecipes()
     .then(response => {
       recipes.value = response.data;
@@ -35,4 +36,12 @@ onMounted(() => {
     });
 });
 </script>
+
+<style scoped>
+
+h2{
+  margin-left: 10%;
+}
+
+</style>
 
