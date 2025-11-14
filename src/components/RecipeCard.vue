@@ -15,8 +15,8 @@
   </section>
 </template>
 
-<script setup lang="ts">
-import type { Recipe } from '../data/recipes'
+ <script setup lang="ts">
+import type { Recipe } from '../types/recipe'
 
 const props = defineProps<{ recipes: Recipe[] }>()
 const emit = defineEmits<(e: 'open', payload: Recipe) => void>()
