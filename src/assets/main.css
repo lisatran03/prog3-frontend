@@ -2,27 +2,63 @@
  * TEIL 1 — Basis: Variablen, Container, kleine Resets
  *******************************************************/
 
-/* Farb- und Layout-Variablen, die wir überall nutzen */
+/* Standard: LIGHT MODE */
 :root{
-  --ink:#0f172a;             /* Haupttext (dunkel) */
-  --bg:#fafafa;              /* Seitenhintergrund */
-  --muted:#5b6473;           /* Sekundärtext */
-  --line:#e6e6ef;            /* zarte Linien / Rahmen */
+  /* Grundfarben */
+  --bg-page:#fafafa;          /* Seitenhintergrund */
+  --bg-elevated:#ffffff;      /* Karten, Boxen, Dialogs */
+  --ink:#0f172a;              /* Haupttext (dunkel) */
+  --muted:#5b6473;            /* Sekundärtext */
+  --line:#e5e7eb;             /* zarte Linien / Rahmen */
+
+  /* Eingabefelder & Buttons */
+  --field-bg:#ffffff;
+  --field-border:#cfd3e1;
+  --media-bg:#f5f6fb;         /* Bild-Platzhalter */
+  --wave-fill:#ffffff;
+
+  --btn-border:#c9cbe0;
+  --btn-bg-top:#ffffff;
+  --btn-bg-bottom:#f7f8ff;
 
   /* Marken-Farben für weiche Verläufe im Hero */
-  --brand1:#60a5fa;          /* Blau */
-  --brand2:#a78bfa;          /* Lila */
-  --brand3:#f472b6;          /* Pink */
+  --brand1:#60a5fa;           /* Blau */
+  --brand2:#a78bfa;           /* Lila */
+  --brand3:#f472b6;           /* Pink */
 
   /* Kategorien-Farben (Pillen auf den Karten) */
-  --starter:#16a34a;         /* Vorspeise */
-  --main:#d97706;            /* Hauptgericht */
-  --dessert:#dc2626;         /* Dessert */
-  --vegan:#059669;           /* Vegan */
+  --starter:#16a34a;          /* Vorspeise */
+  --main:#d97706;             /* Hauptgericht */
+  --dessert:#dc2626;          /* Dessert */
+  --vegan:#059669;            /* Vegan */
 
   /* Seitlicher CTA-Button (rechts) */
   --cta-bg:#111827;
   --cta-fg:#ffffff;
+}
+
+/* DARK MODE – überschreibt die Variablen, wenn System auf "Dunkel" steht */
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg-page:#020617;
+    --bg-elevated:#020617;
+    --ink:#e5e7eb;
+    --muted:#9ca3af;
+    --line:#111827;
+
+    --field-bg:#020617;
+    --field-border:#4b5563;
+    --media-bg:#0b1120;
+    --wave-fill:#020617;
+
+    --btn-border:#4b5563;
+    --btn-bg-top:#111827;
+    --btn-bg-bottom:#020617;
+
+    /* CTA bleibt dunkel, Text bleibt weiß – passt auch im Dark Mode */
+    --cta-bg:#111827;
+    --cta-fg:#ffffff;
+  }
 }
 
 /* leichte Resets + Grundschrift */
@@ -31,8 +67,11 @@ body{
   margin:0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
   color: var(--ink);
-  background: var(--bg);
+  background: var(--bg-page);
   line-height: 1.5;
+  transition:
+    background-color .25s ease,
+    color .25s ease;
 }
 
 /* zentrale Spaltenbreite + Innenabstand */
@@ -53,8 +92,8 @@ body{
   z-index:50;
 
   /* Optik */
-  background: linear-gradient(180deg, #1f2937, #111827); /* dunkler Verlauf */
-  color:#fff;
+  background: linear-gradient(180deg, var(--cta-bg), #020617); /* dunkler Verlauf */
+  color:var(--cta-fg);
   padding:.75rem .65rem;
   border-radius:.9rem;
   text-decoration:none;
@@ -106,15 +145,18 @@ body{
 /* kleine Feldgruppen mit Label + Input */
 .field{ display:grid; gap:.35rem; }
 .field label{
-  font-size:.9rem; color:#243045; font-weight:600;
+  font-size:.9rem;
+  color:var(--ink);
+  font-weight:600;
 }
 .input,.select{
   width:100%;
   padding:.55rem .7rem;
-  border:1px solid #cfd3e1;
+  border:1px solid var(--field-border);
   border-radius:.6rem;
-  background:#fff;
+  background:var(--field-bg);
   box-shadow:0 1px 0 rgba(0,0,0,.02);
+  color:var(--ink);
 }
 .input:focus,.select:focus{
   outline:none;
@@ -124,7 +166,7 @@ body{
 
 /* Wellenabschluss unter dem Hero */
 .hero__wave{ display:block; width:100%; height:36px; margin-top:.25rem; }
-.hero__wave path{ fill:#fff; opacity:.96; }
+.hero__wave path{ fill:var(--wave-fill); opacity:.96; }
 
 /*******************************************************
  * TEIL 4 — Karten-Übersicht: direkt unter dem Hero
@@ -145,7 +187,7 @@ body{
 /* einzelne Rezeptkarte */
 .card{
   border:1px solid var(--line);
-  background:#fff;
+  background:var(--bg-elevated);
   border-radius:1rem;
   overflow:hidden;
   display:flex;
@@ -164,7 +206,7 @@ body{
   width:100%;
   aspect-ratio: 16/9;   /* einheitliche Bildhöhe */
   object-fit:cover;      /* Beschneidet ohne Verzerren */
-  background:#f5f6fb;    /* Platzhalter-Hintergrund */
+  background:var(--media-bg);    /* Platzhalter-Hintergrund */
 }
 
 /* farbige Kategorie-Pill oben links auf dem Bild */
@@ -197,20 +239,28 @@ body{
   padding:.58rem .95rem;
   cursor:pointer;
   display:inline-flex; align-items:center; justify-content:center; gap:.4rem;
-  border:1px solid #c9cbe0;
-  background: linear-gradient(180deg, #fff, #f7f8ff);
-  font-weight:600; color: var(--ink);
+  border:1px solid var(--btn-border);
+  background: linear-gradient(180deg, var(--btn-bg-top), var(--btn-bg-bottom));
+  font-weight:600;
+  color: var(--ink);
 }
 .btn:hover{
   border-color:#7c3aed;
   box-shadow:0 0 0 3px rgba(124,58,237,.18);
 }
-.btn-ghost{ background:transparent; border:1px solid #c9cbe0; }
+.btn-ghost{ background:transparent; border:1px solid var(--btn-border); }
 
 /*******************************************************
  * TEIL 5 — Dialog (Detailansicht)
  *******************************************************/
-.dialog{ border:none; border-radius:1rem; padding:0; max-width:min(820px,95vw); }
+.dialog{
+  border:none;
+  border-radius:1rem;
+  padding:0;
+  max-width:min(820px,95vw);
+  background:var(--bg-elevated);
+  color:var(--ink);
+}
 .dialog__header,.dialog__footer{ padding: 1rem 1.25rem; }
 .dialog__body{ padding: 0 1.25rem 1.25rem; }
 .dialog__header{ border-bottom:1px solid var(--line); }

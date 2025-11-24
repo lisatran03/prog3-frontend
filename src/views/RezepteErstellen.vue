@@ -82,11 +82,6 @@
           />
           <small class="hint">Optional – du kannst später auch Upload einbauen.</small>
         </label>
-
-        <label class="inline">
-          <input v-model="form.isVegan" type="checkbox" />
-          <span>Vegan</span>
-        </label>
       </fieldset>
 
       <!-- ZUTATEN & SCHRITTE -->
@@ -136,7 +131,7 @@ Linsen kochen …"
       <!-- AKTIONEN -->
       <div class="actions">
         <button class="btn" type="submit" :disabled="submitting">
-          {{ submitting ? 'Speichere…' : 'Rezept speichern (nur lokal)' }}
+          {{ submitting ? 'Speichere…' : 'Rezept speichern' }}
         </button>
         <button class="btn btn--ghost" type="button" @click="resetForm">Zurücksetzen</button>
         <span v-if="saved" class="ok">✔ Gespeichert (localStorage)</span>
@@ -144,11 +139,7 @@ Linsen kochen …"
       </div>
     </form>
 
-    <!-- VORSCHAU: So sieht das Rezept-JSON aus -->
-    <details class="preview" open>
-      <summary>Vorschau (JSON)</summary>
-      <pre>{{ preview }}</pre>
-    </details>
+
   </section>
 </template>
 
@@ -159,8 +150,7 @@ Linsen kochen …"
  * - Beim Speichern parsen wir in Arrays und zeigen das Ergebnis als JSON
  * - Optional: legen es in localStorage ab (damit man „persistentes“ Feedback hat)
  */
-
-import { computed, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 
 type Difficulty = 'easy' | 'medium' | 'hard'
 
@@ -177,7 +167,7 @@ type Recipe = {
   notes?: string
 }
 
-// ---- Reaktive Formular-Daten (ohne Arrays; die Arrays bauen wir beim Speichern) ----
+// Formular-Objekt
 const form = reactive<Recipe>({
   title: '',
   category: '',
@@ -191,7 +181,7 @@ const form = reactive<Recipe>({
   notes: ''
 })
 
-// Text-Eingaben für Arrays
+// Text-Eingaben für Zutaten/Schritte/Tags
 const ingredientsText = ref('')
 const stepsText = ref('')
 const tagsText = ref('')
@@ -201,27 +191,19 @@ const submitting = ref(false)
 const saved = ref(false)
 const submitError = ref('')
 
-// einfache Fehler-Nachrichten pro Feld
+// Fehler je Feld
 const errors = reactive<Record<string, string>>({})
 
-// Hilfsfunktionen: Text → Arrays
+// Text → Arrays
 const splitLines = (txt: string) =>
   txt.split('\n').map(s => s.trim()).filter(Boolean)
 
 const splitTags = (txt: string) =>
   txt.split(',').map(s => s.trim()).filter(Boolean)
 
-// Vorschau-JSON (zeigt live, was gespeichert würde)
-const preview = computed(() => JSON.stringify({
-  ...form,
-  ingredients: splitLines(ingredientsText.value),
-  steps: splitLines(stepsText.value),
-  tags: splitTags(tagsText.value),
-}, null, 2))
-
-// Mini-Validierung nur im Frontend
+// einfache Frontend-Validierung
 function validate(): boolean {
-  Object.keys(errors).forEach(k => delete errors[k]) // alte Fehler löschen
+  Object.keys(errors).forEach(k => delete errors[k])
 
   if (!form.title.trim()) errors.title = 'Bitte Titel angeben.'
   if (!form.category) errors.category = 'Bitte Kategorie wählen.'
@@ -235,7 +217,7 @@ function validate(): boolean {
   return Object.keys(errors).length === 0
 }
 
-// Formular absenden – rein lokal
+// Formular absenden → Daten an Spring-Backend schicken
 async function handleSubmit() {
   submitError.value = ''
   saved.value = false
@@ -244,27 +226,31 @@ async function handleSubmit() {
 
   submitting.value = true
   try {
-    // „Speicherbares“ Objekt bauen
+    // Objekt so aufbereiten, wie es das Backend erwartet
     const recipe: Recipe = {
       ...form,
       ingredients: splitLines(ingredientsText.value),
       steps: splitLines(stepsText.value),
-      tags: splitTags(tagsText.value),
+      tags: splitTags(tagsText.value)
     }
 
-    // OPTIONAL: lokal ablegen, damit es „bleibt“
-    // Entferne diesen Block, wenn du GAR nichts speichern willst.
-    const KEY = 'rezepte'
-    const existing = JSON.parse(localStorage.getItem(KEY) || '[]')
-    existing.push({ ...recipe, id: Date.now() })
-    localStorage.setItem(KEY, JSON.stringify(existing))
+    const res = await fetch('http://localhost:8080/recipes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(recipe)
+    })
+
+    if (!res.ok) {
+      throw new Error('Backend hat einen Fehler zurückgegeben.')
+    }
 
     saved.value = true
-
-    // Optional: Formular zurücksetzen (Kommentar entfernen, wenn gewünscht)
-    // resetForm()
-  } catch (e: any) {
-    submitError.value = 'Unerwarteter Fehler beim lokalen Speichern.'
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      submitError.value = e.message
+    } else {
+      submitError.value = String(e)
+    }
   } finally {
     submitting.value = false
   }
@@ -279,14 +265,20 @@ function resetForm() {
   form.image = ''
   form.isVegan = false
   form.notes = ''
+  form.ingredients = []
+  form.steps = []
+  form.tags = []
+
   ingredientsText.value = ''
   stepsText.value = ''
   tagsText.value = ''
+
   Object.keys(errors).forEach(k => delete errors[k])
   saved.value = false
   submitError.value = ''
 }
 </script>
+
 
 <style scoped>
 /* Kleine, gut lesbare Standard-Styles – ohne Abhängigkeit zu deiner Hauptseite */
