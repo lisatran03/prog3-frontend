@@ -1,33 +1,24 @@
 <template>
-  <!--
-    Seite: Neues Rezept erstellen – reine Frontend-Version
-    - Keine Server-Requests
-    - Einfache Validierung im Browser
-    - Vorschau des JSONs
-    - (Optional) temporäres Speichern in localStorage
-  -->
   <section class="container page" aria-labelledby="title-neues-rezept">
     <h1 id="title-neues-rezept">Neues Rezept erstellen</h1>
     <p class="muted">
-      Fülle die Felder aus. Beim Speichern wird das Rezept lokal geprüft und darunter als JSON angezeigt.
+      Fülle die Felder aus. Beim Speichern wird das Rezept an den Backend-Server gesendet.
     </p>
 
-    <!-- Formular – wir verhindern das echte Submit und rufen handleSubmit auf -->
     <form class="form" @submit.prevent="handleSubmit">
-      <!-- STAMMDATEN -->
       <fieldset class="box">
         <legend>Stammdaten</legend>
 
         <label class="field">
-          <span class="label">Titel *</span>
+          <span class="label">Titel (Rezeptname) *</span>
           <input
-            v-model.trim="form.title"
+            v-model.trim="form.name"
             type="text"
             required
             placeholder="z. B. Linsen-Dal"
-            :class="{ 'is-invalid': errors.title }"
+            :class="{ 'is-invalid': errors.name }"
           />
-          <small v-if="errors.title" class="err">{{ errors.title }}</small>
+          <small v-if="errors.name" class="err">{{ errors.name }}</small>
         </label>
 
         <label class="field">
@@ -80,11 +71,10 @@
             placeholder="https://…/foto.jpg"
             inputmode="url"
           />
-          <small class="hint">Optional – du kannst später auch Upload einbauen.</small>
+          <small class="hint">Optional.</small>
         </label>
       </fieldset>
 
-      <!-- ZUTATEN & SCHRITTE -->
       <fieldset class="box">
         <legend>Zutaten & Schritte</legend>
 
@@ -94,23 +84,19 @@
             v-model.trim="ingredientsText"
             rows="6"
             required
-            placeholder="200 g Linsen
-1 Zwiebel
-2 EL Öl"
+            placeholder="200 g Linsen"
             :class="{ 'is-invalid': errors.ingredients }"
           ></textarea>
           <small v-if="errors.ingredients" class="err">{{ errors.ingredients }}</small>
         </label>
 
         <label class="field">
-          <span class="label">Schritte (eine pro Zeile) *</span>
+          <span class="label">Anweisungen (eine pro Zeile) *</span>
           <textarea
             v-model.trim="stepsText"
             rows="8"
             required
-            placeholder="Zwiebel schneiden
-Öl erhitzen
-Linsen kochen …"
+            placeholder="Zwiebel schneiden"
             :class="{ 'is-invalid': errors.steps }"
           ></textarea>
           <small v-if="errors.steps" class="err">{{ errors.steps }}</small>
@@ -118,8 +104,7 @@ Linsen kochen …"
 
         <label class="field">
           <span class="label">Tags (kommagetrennt)</span>
-          <input v-model.trim="tagsText" type="text" placeholder="scharf, schnell, ohne-Ofen" />
-          <small class="hint">Optional – helfen später bei der Suche.</small>
+          <input v-model.trim="tagsText" type="text" placeholder="scharf, schnell" />
         </label>
 
         <label class="field">
@@ -128,56 +113,47 @@ Linsen kochen …"
         </label>
       </fieldset>
 
-      <!-- AKTIONEN -->
       <div class="actions">
         <button class="btn" type="submit" :disabled="submitting">
           {{ submitting ? 'Speichere…' : 'Rezept speichern' }}
         </button>
         <button class="btn btn--ghost" type="button" @click="resetForm">Zurücksetzen</button>
-        <span v-if="saved" class="ok">✔ Gespeichert (localStorage)</span>
-        <span v-if="submitError" class="err">{{ submitError }}</span>
+        <span v-if="saved" class="ok">✔ Erfolgreich an Backend gesendet!</span>
+        <span v-if="submitError" class="err">Fehler: {{ submitError }}</span>
       </div>
     </form>
-
-
   </section>
 </template>
 
 <script setup lang="ts">
-/**
- * Reines Frontend (kein Backend):
- * - Wir halten Form-Daten in `form` + Textfelder für Zutaten/Schritte/Tags
- * - Beim Speichern parsen wir in Arrays und zeigen das Ergebnis als JSON
- * - Optional: legen es in localStorage ab (damit man „persistentes“ Feedback hat)
- */
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+// KORRIGIERT: Importiere die createRecipe Funktion
+import { createRecipe } from '../api'
+
+const router = useRouter()
 
 type Difficulty = 'easy' | 'medium' | 'hard'
 
-type Recipe = {
-  title: string
+// Interface für die Formular-Daten
+type RecipeForm = {
+  name: string
   category: string
   time: number
   difficulty: Difficulty
   image?: string
   isVegan: boolean
-  ingredients: string[]
-  steps: string[]
-  tags: string[]
   notes?: string
 }
 
 // Formular-Objekt
-const form = reactive<Recipe>({
-  title: '',
+const form = reactive<RecipeForm>({
+  name: '',
   category: '',
   time: 1,
   difficulty: 'easy',
   image: '',
   isVegan: false,
-  ingredients: [],
-  steps: [],
-  tags: [],
   notes: ''
 })
 
@@ -191,28 +167,28 @@ const submitting = ref(false)
 const saved = ref(false)
 const submitError = ref('')
 
-// Fehler je Feld
+// Fehler je Feld (KORRIGIERT: Verwenden konsistente Namen wie 'name')
 const errors = reactive<Record<string, string>>({})
 
-// Text → Arrays
+// Text → Arrays Helfer
 const splitLines = (txt: string) =>
   txt.split('\n').map(s => s.trim()).filter(Boolean)
 
 const splitTags = (txt: string) =>
   txt.split(',').map(s => s.trim()).filter(Boolean)
 
-// einfache Frontend-Validierung
+// Einfache Frontend-Validierung
 function validate(): boolean {
   Object.keys(errors).forEach(k => delete errors[k])
 
-  if (!form.title.trim()) errors.title = 'Bitte Titel angeben.'
+  if (!form.name.trim()) errors.name = 'Bitte Titel/Namen angeben.'
   if (!form.category) errors.category = 'Bitte Kategorie wählen.'
   if (!form.time || form.time < 1) errors.time = 'Zeit muss ≥ 1 Minute sein.'
 
   const ing = splitLines(ingredientsText.value)
   const stp = splitLines(stepsText.value)
   if (ing.length === 0) errors.ingredients = 'Mindestens 1 Zutat angeben.'
-  if (stp.length === 0) errors.steps = 'Mindestens 1 Schritt angeben.'
+  if (stp.length === 0) errors.steps = 'Mindestens 1 Anweisung angeben.'
 
   return Object.keys(errors).length === 0
 }
@@ -226,30 +202,41 @@ async function handleSubmit() {
 
   submitting.value = true
   try {
-    // Objekt so aufbereiten, wie es das Backend erwartet
-    const recipe: Recipe = {
-      ...form,
-      ingredients: splitLines(ingredientsText.value),
-      steps: splitLines(stepsText.value),
-      tags: splitTags(tagsText.value)
+    // 1. Strings aus Textareas vorbereiten
+    const ingredientsString = splitLines(ingredientsText.value).join('\n')
+    // KORRIGIERT: Schritte werden zu Anweisungen (instructions)
+    const instructionsString = splitLines(stepsText.value).join('\n')
+
+    // 2. Erstellen des Objekts, wie es das BACKEND erwartet
+    const recipeForBackend = {
+      // name kommt direkt vom Formular
+      name: form.name,
+
+      // Zutaten und Anweisungen sind Strings
+      ingredients: ingredientsString,
+      instructions: instructionsString,
+
+      // Kategorie ist ein Objekt
+      category: {
+        name: form.category
+      }
     }
 
-    const res = await fetch('http://localhost:8080/recipes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(recipe)
-    })
-
-    if (!res.ok) {
-      throw new Error('Backend hat einen Fehler zurückgegeben.')
-    }
+    // 3. KORRIGIERT: API-Aufruf über die createRecipe Funktion (axios POST)
+    await createRecipe(recipeForBackend)
 
     saved.value = true
+    alert(`Rezept "${form.name}" erfolgreich erstellt und an das Backend gesendet!`)
+
+    // Weiterleitung zur Rezeptliste
+    router.push('/')
+
   } catch (e: unknown) {
-    if (e instanceof Error) {
+    // Verbesserte Fehlerbehandlung, falls Axios oder Backend einen Fehler wirft
+    if (e && typeof e === 'object' && 'message' in e) {
       submitError.value = e.message
     } else {
-      submitError.value = String(e)
+      submitError.value = 'Unbekannter Fehler beim Speichern.'
     }
   } finally {
     submitting.value = false
@@ -258,16 +245,13 @@ async function handleSubmit() {
 
 // Formular leeren
 function resetForm() {
-  form.title = ''
+  form.name = ''
   form.category = ''
   form.time = 1
   form.difficulty = 'easy'
   form.image = ''
   form.isVegan = false
   form.notes = ''
-  form.ingredients = []
-  form.steps = []
-  form.tags = []
 
   ingredientsText.value = ''
   stepsText.value = ''
@@ -279,20 +263,16 @@ function resetForm() {
 }
 </script>
 
-
 <style scoped>
-/* Kleine, gut lesbare Standard-Styles – ohne Abhängigkeit zu deiner Hauptseite */
+/* ... (deine bestehenden Styles) ... */
 
 .page { padding: 1rem 0 2rem; }
 .muted { color: #64748b; margin: .25rem 0 1rem; }
-
 .form { display: grid; gap: 1rem; }
 .box { border: 1px solid #e5e7eb; border-radius: .75rem; padding: 1rem; }
 legend { padding: 0 .3rem; font-weight: 700; color: #334155; }
-
 .field { display: grid; gap: .35rem; }
 .label { font-size: .92rem; color: #334155; font-weight: 600; }
-
 input, select, textarea {
   padding: .6rem .7rem;
   border: 1px solid #cfd3e1;
@@ -303,10 +283,7 @@ input, select, textarea {
 input.is-invalid, textarea.is-invalid, select.is-invalid { border-color: #dc2626; }
 .err { color: #b91c1c; font-size: .9rem; }
 .hint { color: #6b7280; font-size: .85rem; }
-
 .row { display: grid; gap: .75rem; grid-template-columns: 1fr 1fr; }
-.inline { display: inline-flex; align-items: center; gap: .5rem; margin-top: .3rem; }
-
 .actions { display: flex; gap: .6rem; align-items: center; }
 .btn {
   padding: .6rem .9rem;
@@ -318,18 +295,7 @@ input.is-invalid, textarea.is-invalid, select.is-invalid { border-color: #dc2626
 }
 .btn:disabled { opacity: .65; cursor: default; }
 .btn--ghost { background: #fff; color: #334155; }
-
 .ok { color: #166534; }
-.preview { margin-top: 1rem; }
-pre {
-  background: #0b1020;
-  color: #e6f0ff;
-  padding: .75rem;
-  border-radius: .6rem;
-  overflow: auto;
-}
-
-/* Responsiv: auf schmalen Screens die zwei Spalten untereinander */
 @media (max-width: 640px) {
   .row { grid-template-columns: 1fr; }
 }
