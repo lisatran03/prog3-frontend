@@ -2,29 +2,6 @@
   <main>
     <TheWelcome />
 
-    <section class="search-filters">
-      <input
-        v-model="searchQuery.q"
-        placeholder="Nach Name suchen (q)"
-        @keyup.enter="performSearch"
-      >
-
-      <input
-        v-model="searchQuery.ingredient"
-        placeholder="Nach Zutat suchen"
-        @keyup.enter="performSearch"
-      >
-
-      <select v-model="searchQuery.category" @change="performSearch">
-        <option value="">Alle Kategorien</option>
-        <option value="Hauptspeise">Hauptspeise</option>
-        <option value="Dessert">Dessert</option>
-      </select>
-
-      <button @click="performSearch">Suchen & Filtern</button>
-      <button @click="resetSearch">Zurücksetzen</button>
-    </section>
-
     <h2>Rezepte ({{ recipes.length }})</h2>
     <ul>
       <li v-for="recipe in recipes" :key="recipe.id">
