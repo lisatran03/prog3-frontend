@@ -232,12 +232,14 @@ async function handleSubmit() {
     router.push('/')
 
   } catch (e: unknown) {
-    // Verbesserte Fehlerbehandlung, falls Axios oder Backend einen Fehler wirft
+    let errorMessage = 'Unbekannter Fehler beim Speichern.';
     if (e && typeof e === 'object' && 'message' in e) {
-      submitError.value = e.message
-    } else {
-      submitError.value = 'Unbekannter Fehler beim Speichern.'
+      errorMessage = String(e.message);
+    } else if (e instanceof Error) {
+      errorMessage = e.message;
     }
+
+    submitError.value = errorMessage;
   } finally {
     submitting.value = false
   }
