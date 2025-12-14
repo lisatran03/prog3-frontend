@@ -102,14 +102,15 @@ async function fetchRecipe() {
   recipe.value = null
 
   try {
-    const data = await getRecipeById(recipeId)
+    const response = await getRecipeById(recipeId)
+    const recipeData = response.data; // <--- HIER SIND DIE REZEPTDATEN
 
     // Logik zur Normalisierung der Category (falls sie als Objekt kommt)
     const normalizedData = {
-      ...data,
-      category: typeof data.category === 'object' && data.category !== null
-        ? data.category.name
-        : data.category
+      ...recipeData,
+      category: typeof recipeData.category === 'object' && recipeData.category !== null
+        ? recipeData.category.name
+        : recipeData.category
     }
 
     recipe.value = normalizedData as Recipe
