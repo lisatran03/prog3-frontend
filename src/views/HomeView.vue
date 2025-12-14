@@ -21,7 +21,7 @@ import { ref, onMounted } from 'vue'
 // Importiere deleteRecipe ZUSÄTZLICH zu getRecipes
 import { getRecipes, deleteRecipe } from '../api'
 
-// ANPASSUNG: Füge 'id' hinzu, da wir sie zum Löschen und Bearbeiten benötigen!
+//
 interface Recipe {
   id: number
   name: string

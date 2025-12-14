@@ -28,6 +28,11 @@ export function getRecipes(params: RecipeSearchParams = {}) {
     params: params
   });
 }
+// Funktion zum Abrufen eines einzelnen Rezepts
+export function getRecipeById(id: number) {
+  // Ruft den Endpunkt /recipes/{id} ab
+  return axios.get(`${BASE_URL}/recipes/${id}`);
+}
 
 // Bestehende Funktion beibehalten
 export function getCategories() {

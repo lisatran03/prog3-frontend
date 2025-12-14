@@ -2,7 +2,7 @@
   <section class="container page" aria-labelledby="title-neues-rezept">
     <h1 id="title-neues-rezept">Neues Rezept erstellen</h1>
     <p class="muted">
-      Fülle die Felder aus. Beim Speichern wird das Rezept an den Backend-Server gesendet.
+      Fülle die Felder aus.
     </p>
 
     <form class="form" @submit.prevent="handleSubmit">
@@ -118,7 +118,7 @@
           {{ submitting ? 'Speichere…' : 'Rezept speichern' }}
         </button>
         <button class="btn btn--ghost" type="button" @click="resetForm">Zurücksetzen</button>
-        <span v-if="saved" class="ok">✔ Erfolgreich an Backend gesendet!</span>
+        <span v-if="saved" class="ok">✔ Rezept erfolgreich gespeichert!</span>
         <span v-if="submitError" class="err">Fehler: {{ submitError }}</span>
       </div>
     </form>
@@ -226,7 +226,7 @@ async function handleSubmit() {
     await createRecipe(recipeForBackend)
 
     saved.value = true
-    alert(`Rezept "${form.name}" erfolgreich erstellt und an das Backend gesendet!`)
+    alert(`Rezept "${form.name}" erfolgreich erstellt!`)
 
     // Weiterleitung zur Rezeptliste
     router.push('/')
