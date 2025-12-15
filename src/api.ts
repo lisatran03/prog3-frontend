@@ -18,6 +18,9 @@ interface RecipeData {
   category: {
     name: string;
   };
+  time?: number;
+  difficulty?: string;
+  imageUrl?: string;
 }
 
 // --- GET-Operationen (Suchen/Filtern) ---

@@ -27,9 +27,7 @@
               <option>Vorspeisen</option>
               <option>Hauptgerichte</option>
               <option>Desserts</option>
-              <option>Vegan</option>
               <option>Vegetarisch</option>
-              <option>Glutenfrei</option>
             </select>
           </div>
         </div>
@@ -79,7 +77,7 @@ type RecipeUI = {
   category: string
   ingredients: string[]
   instructions: string
-  image?: string
+  imageUrl?: string
   time?: number
   difficulty?: string
 }
@@ -119,7 +117,7 @@ function normalize(item: any): RecipeUI {
     category,
     ingredients: ingredientsArr,
     instructions,
-    image: item?.image,
+    imageUrl: item?.imageUrl ?? item?.image,
     time: item?.time,
     difficulty: item?.difficulty
   }

@@ -214,10 +214,6 @@ body{
   border:1px solid rgba(255,255,255,.35);
   box-shadow:0 4px 10px rgba(0,0,0,.18);
 }
-.pill--starter{ background: linear-gradient(90deg, var(--starter), #22c55e); }
-.pill--main{    background: linear-gradient(90deg, var(--main), #f59e0b); }
-.pill--dessert{ background: linear-gradient(90deg, var(--dessert), #ef4444); }
-.pill--vegan{   background: linear-gradient(90deg, var(--vegan), #34d399); }
 
 /* Textbereich der Karte */
 .card__body{

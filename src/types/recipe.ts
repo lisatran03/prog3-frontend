@@ -3,7 +3,7 @@ export interface Recipe {
   title: string
   description: string
   category: string
-  image?: string   // optional, da Backend sie nicht liefert
+  imageUrl?: string   // optional, da Backend sie nicht liefert
   time?: string    // optional
   level?: string   // optional
 }

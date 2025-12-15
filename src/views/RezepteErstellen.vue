@@ -66,7 +66,7 @@
         <label class="field">
           <span class="label">Bild-URL</span>
           <input
-            v-model.trim="form.image"
+            v-model.trim="form.imageUrl"
             type="url"
             placeholder="https://…/foto.jpg"
             inputmode="url"
@@ -141,7 +141,7 @@ type RecipeForm = {
   category: string
   time: number
   difficulty: Difficulty
-  image?: string
+  imageUrl?: string
   isVegan: boolean
   notes?: string
 }
@@ -152,7 +152,7 @@ const form = reactive<RecipeForm>({
   category: '',
   time: 1,
   difficulty: 'easy',
-  image: '',
+  imageUrl: '',
   isVegan: false,
   notes: ''
 })
@@ -219,7 +219,12 @@ async function handleSubmit() {
       // Kategorie ist ein Objekt
       category: {
         name: form.category
-      }
+      },
+
+      time: form.time,
+      difficulty: form.difficulty,
+      imageUrl: form.imageUrl || null
+
     }
 
     // 3. KORRIGIERT: API-Aufruf über die createRecipe Funktion (axios POST)
@@ -251,7 +256,7 @@ function resetForm() {
   form.category = ''
   form.time = 1
   form.difficulty = 'easy'
-  form.image = ''
+  form.imageUrl = ''
   form.isVegan = false
   form.notes = ''
 

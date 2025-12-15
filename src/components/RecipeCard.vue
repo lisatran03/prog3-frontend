@@ -3,9 +3,9 @@
     <article class="card" v-for="r in recipes" :key="r.id">
       <div class="card__media-wrap">
         <img
-          v-if="r.image"
+          v-if="r.imageUrl"
           class="card__media"
-          :src="r.image"
+          :src="r.imageUrl"
           :alt="r.name"
         />
         <div v-else class="card__media placeholder">Kein Bild</div>
@@ -36,7 +36,7 @@ type RecipeCard = {
   category: string
   ingredients: string[]
   instructions: string
-  image?: string
+  imageUrl?: string
   time?: number
   difficulty?: string
 }
@@ -53,7 +53,7 @@ function pillClass(r: RecipeCard) {
     'pill--starter': c.includes('vorspeis'),
     'pill--main': c.includes('haupt'),
     'pill--dessert': c.includes('dessert'),
-    'pill--vegan': c.includes('vegan')
+    'pill--vegetarian': c.includes('vegetar')
   }
 }
 </script>
@@ -78,11 +78,10 @@ function pillClass(r: RecipeCard) {
 .card__media { width: 100%; height: 140px; object-fit: cover; display: block; background: #ffffff; }
 .placeholder { display:flex; align-items:center; justify-content:center; color:#6b7280; font-size:.9rem; }
 .pill { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: 999px; color: #ffffff; font-size:0.75rem; font-weight:700; }
-.pill--starter { background:#f97316; }
+.pill--starter { background: #d6712a; }
 .pill--main { background:#2563eb; }
 .pill--dessert { background:#db2777; }
-.pill--vegan { background: #9e16a3; }
-.pill--vegetarisch { background: #42e2e8; }
+.pill--vegetarian { background: #42e2e8; }
 .card__body { padding: 0.9rem; display:flex; flex-direction:column; gap:0.5rem; }
 .card__title { margin:0; font-size:1rem; }
 .card__meta { color: #ffffff; font-size:0.875rem; margin:0; }
