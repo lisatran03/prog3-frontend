@@ -1,206 +1,91 @@
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { getRecipes } from '../api'
-
-interface Category {
-  name: string
-}
-
-interface Recipe {
-  id: number
-  name: string
-  time?: number
-  difficulty?: string
-  image?: string
-  isVegan?: boolean
-  notes?: string
-  ingredients: string[]
-  instructions: string
-  category?: Category
-  // falls ihr tags habt:
-  tags?: string[]
-}
-
-const recipes = ref<Recipe[]>([])
-const loading = ref(false)
-const error = ref<string | null>(null)
-
-// Hilfsfunktion: Anweisungen in einzelne Schritte aufteilen
-function instructionsToSteps(instructions: string | undefined) {
-  if (!instructions) return []
-  return instructions
-    .split('\n')
-    .map(s => s.trim())
-    .filter(Boolean)
-}
-
-async function loadRecipes() {
-  loading.value = true
-  error.value = null
-  try {
-    const response = await getRecipes()
-    recipes.value = response.data
-  } catch (e) {
-    console.error(e)
-    error.value = 'Fehler beim Laden der Rezepte.'
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(loadRecipes)
-</script>
-
-
 <template>
-  <main class="page">
-    <h1>Alle Rezepte</h1>
+  <section class="cards">
+    <article class="card" v-for="r in recipes" :key="r.id">
+      <div class="card__media-wrap">
+        <img
+          v-if="r.image"
+          class="card__media"
+          :src="r.image"
+          :alt="r.name"
+        />
+        <div v-else class="card__media placeholder">Kein Bild</div>
 
-    <p v-if="loading">Lade Rezepte...</p>
-    <p v-else-if="error" class="error">{{ error }}</p>
+        <span class="pill" :class="pillClass(r)">{{ r.category }}</span>
+      </div>
 
-    <section v-else class="recipes-grid">
-      <article
-        v-for="recipe in recipes"
-        :key="recipe.id"
-        class="recipe-card"
-      >
-        <!-- Bild -->
-        <div v-if="recipe.image" class="recipe-image-wrapper">
-          <img
-            :src="recipe.image"
-            :alt="recipe.name"
-            class="recipe-image"
-          />
-        </div>
+      <div class="card__body">
+        <h3 class="card__title">{{ r.name }}</h3>
+        <p class="card__meta">
+          <span v-if="r.time">{{ r.time }} min</span>
+          <span v-if="r.time && r.difficulty"> • </span>
+          <span v-if="r.difficulty">{{ r.difficulty }}</span>
+        </p>
 
-        <!-- Stammdaten -->
-        <header class="recipe-header">
-          <h2>{{ recipe.name }}</h2>
-          <p class="recipe-meta">
-            <span v-if="recipe.category">Kategorie: {{ recipe.category.name }}</span>
-            <span v-if="recipe.time"> · Zeit: {{ recipe.time }} min</span>
-            <span v-if="recipe.difficulty"> · Schwierigkeit: {{ recipe.difficulty }}</span>
-            <span v-if="recipe.isVegan"> · 🌱 vegan</span>
-          </p>
-        </header>
-
-        <!-- Zutaten -->
-        <section class="recipe-section">
-          <h3>Zutaten</h3>
-          <ul>
-            <li v-for="(ing, idx) in recipe.ingredients" :key="idx">
-              {{ ing }}
-            </li>
-          </ul>
-        </section>
-
-        <!-- Schritte -->
-        <section class="recipe-section">
-          <h3>Anweisungen</h3>
-          <ol>
-            <li
-              v-for="(step, idx) in instructionsToSteps(recipe.instructions)"
-              :key="idx"
-            >
-              {{ step }}
-            </li>
-          </ol>
-        </section>
-
-        <!-- Tags + Notizen -->
-        <section class="recipe-section" v-if="(recipe.tags && recipe.tags.length) || recipe.notes">
-          <div v-if="recipe.tags && recipe.tags.length" class="tags">
-            <span
-              v-for="(tag, idx) in recipe.tags"
-              :key="idx"
-              class="tag"
-            >
-              {{ tag }}
-            </span>
-          </div>
-          <p v-if="recipe.notes" class="notes">
-            <strong>Notizen:</strong> {{ recipe.notes }}
-          </p>
-        </section>
-      </article>
-    </section>
-  </main>
+        <button class="btn btn-ghost" type="button" @click="$emit('open', r)">
+          Ansehen
+        </button>
+      </div>
+    </article>
+  </section>
 </template>
 
+<script setup lang="ts">
+type RecipeCard = {
+  id: number
+  name: string
+  category: string
+  ingredients: string[]
+  instructions: string
+  image?: string
+  time?: number
+  difficulty?: string
+}
 
+defineProps<{ recipes: RecipeCard[] }>()
+
+defineEmits<{
+  (e: 'open', payload: RecipeCard): void
+}>()
+
+function pillClass(r: RecipeCard) {
+  const c = (r.category || '').toLowerCase()
+  return {
+    'pill--starter': c.includes('vorspeis'),
+    'pill--main': c.includes('haupt'),
+    'pill--dessert': c.includes('dessert'),
+    'pill--vegan': c.includes('vegan')
+  }
+}
+</script>
 
 <style scoped>
-.page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-.recipes-grid {
+.cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  padding: 1rem 0;
 }
-
-.recipe-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
+.card {
   background: #ffffff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #49ad71;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
 }
-
-.recipe-header h2 {
-  margin: 0;
-}
-
-.recipe-meta {
-  font-size: 0.9rem;
-  color: #6b7280;
-}
-
-.recipe-section {
-  margin-top: 0.75rem;
-}
-
-.recipe-section h3 {
-  margin: 0 0 0.25rem 0;
-  font-size: 1rem;
-}
-
-.recipe-image-wrapper {
-  margin: -1rem -1.25rem 0.75rem;
-}
-
-.recipe-image {
-  width: 100%;
-  display: block;
-  border-radius: 12px 12px 0 0;
-  object-fit: cover;
-  max-height: 200px;
-}
-
-.tags {
-  margin-bottom: 0.25rem;
-}
-
-.tag {
-  display: inline-block;
-  background: #eef2ff;
-  color: #4338ca;
-  border-radius: 999px;
-  padding: 0.1rem 0.5rem;
-  font-size: 0.8rem;
-  margin-right: 0.25rem;
-  margin-bottom: 0.25rem;
-}
-
-.notes {
-  font-size: 0.9rem;
-}
-
-.error {
-  color: #b91c1c;
-}
+.card__media-wrap { position: relative; }
+.card__media { width: 100%; height: 140px; object-fit: cover; display: block; background: #ffffff; }
+.placeholder { display:flex; align-items:center; justify-content:center; color:#6b7280; font-size:.9rem; }
+.pill { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: 999px; color: #ffffff; font-size:0.75rem; font-weight:700; }
+.pill--starter { background:#f97316; }
+.pill--main { background:#2563eb; }
+.pill--dessert { background:#db2777; }
+.pill--vegan { background: #9e16a3; }
+.pill--vegetarisch { background: #42e2e8; }
+.card__body { padding: 0.9rem; display:flex; flex-direction:column; gap:0.5rem; }
+.card__title { margin:0; font-size:1rem; }
+.card__meta { color: #ffffff; font-size:0.875rem; margin:0; }
+.btn { align-self:flex-start; padding:0.45rem 0.7rem; border: 1px solid #49ad71; background: transparent; border-radius: 10px; cursor:pointer; color:#374151; }
+.btn:hover { border-color:#7c3aed; }
 </style>

@@ -1,161 +1,173 @@
 <template>
-  <main>
-    <TheWelcome />
+  <div>
+    <!-- HERO / Suche -->
+    <header class="hero">
+      <div class="container hero__inner">
+        <div class="branding">
+          <h1>Digitales Kochbuch</h1>
+          <p>Suche in deinen Rezepten aus der Datenbank.</p>
+        </div>
 
-    <h2>Rezepte ({{ recipes.length }})</h2>
-    <ul>
-      <li v-for="recipe in recipes" :key="recipe.id">
-        <strong>[{{ recipe.category }}] {{ recipe.name }}</strong>
-        <p>Zutaten: {{ recipe.ingredients }}</p>
-        <p>Anleitung: {{ recipe.instructions }}</p>
+        <div class="search-panel">
+          <div class="field">
+            <label for="q">Suche</label>
+            <input
+              id="q"
+              type="search"
+              class="input"
+              placeholder="Titel, Zutat, Kategorie"
+              v-model="searchTerm"
+            />
+          </div>
 
-        <button class="delete-button" @click="deleteRecipeHandler(recipe.id)">Löschen</button>
-      </li>
-    </ul>
-  </main>
+          <div class="field">
+            <label for="course">Kategorie</label>
+            <select id="course" class="select" v-model="selectedCategory">
+              <option value="">Alle Kategorien</option>
+              <option>Vorspeisen</option>
+              <option>Hauptgerichte</option>
+              <option>Desserts</option>
+              <option>Vegan</option>
+              <option>Vegetarisch</option>
+              <option>Glutenfrei</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Debug / Status -->
+        <p class="debug" v-if="loading">Lade Rezepte…</p>
+        <p class="debug err" v-else-if="error">{{ error }}</p>
+        <p class="debug" v-else>Rezepte geladen: {{ recipes.length }}</p>
+      </div>
+    </header>
+
+    <main class="container main">
+      <RecipeCards :recipes="filteredRecipes" @open="openRecipe" />
+
+      <p v-if="!loading && !error && filteredRecipes.length === 0" class="debug">
+        Keine Treffer für deine Suche/Filter.
+      </p>
+    </main>
+
+    <!-- Dialog (optional) -->
+    <dialog id="recipe-dialog" class="dialog" aria-modal="true">
+      <form method="dialog">
+        <header class="dialog__header">
+          <h3 class="dialog__title">{{ selected?.name }}</h3>
+        </header>
+        <div class="dialog__body" v-if="selected">
+          <p><strong>Kategorie:</strong> {{ selected.category }}</p>
+          <p><strong>Zutaten:</strong> {{ selected.ingredients.join(', ') }}</p>
+          <p><strong>Anleitung:</strong> {{ selected.instructions }}</p>
+        </div>
+        <footer class="dialog__footer">
+          <button class="btn btn-ghost" value="cancel" type="submit">Schließen</button>
+        </footer>
+      </form>
+    </dialog>
+  </div>
 </template>
 
 <script setup lang="ts">
-import TheWelcome from '../components/TheWelcome.vue'
-import { ref, onMounted } from 'vue'
-// Importiere deleteRecipe ZUSÄTZLICH zu getRecipes
-import { getRecipes, deleteRecipe } from '../api'
+import { ref, computed, onMounted } from 'vue'
+import RecipeCards from '../components/RecipeCard.vue'
+import { getRecipes } from '../api'
 
-//
-interface Recipe {
+type RecipeUI = {
   id: number
   name: string
   category: string
-  ingredients: string
+  ingredients: string[]
   instructions: string
+  image?: string
+  time?: number
+  difficulty?: string
 }
 
-const recipes = ref<Recipe[]>([])
+const recipes = ref<RecipeUI[]>([])
+const loading = ref(false)
+const error = ref<string | null>(null)
 
-// NEU: State für die Such- und Filterparameter
-const searchQuery = ref({
-  q: '',
-  category: '',
-  ingredient: '',
-})
+const searchTerm = ref('')
+const selectedCategory = ref('')
 
+const selected = ref<RecipeUI | null>(null)
+function openRecipe(r: RecipeUI) {
+  selected.value = r
+  ;(document.getElementById('recipe-dialog') as HTMLDialogElement | null)?.showModal()
+}
 
-function normalize(item: any): Recipe {
-  // Wichtig: ID muss vom Backend kommen!
-  const id = item?.id ?? -1
+/** Robustes Normalize: egal ob Backend ingredients String oder Array liefert */
+function normalize(item: any): RecipeUI {
+  const id = Number(item?.id ?? -1)
+
   const name = item?.name ?? item?.title ?? ''
-  // ANPASSUNG: Backend gibt Category oft als Objekt zurück
   const category = item?.category?.name ?? item?.category ?? ''
-  const ingredients = Array.isArray(item?.ingredients) ? item.ingredients.join(', ') : (item?.ingredients ?? '')
-  const instructions = Array.isArray(item?.steps) ? item.steps.join(', ') : (item?.instructions ?? '')
-  return { id, name, category, ingredients, instructions }
-}
 
-function loadFromLocalStorage() {
-  try {
-    const raw = JSON.parse(localStorage.getItem('recipes') || '[]')
-    if (Array.isArray(raw)) {
-      // Füge Default-ID hinzu, falls sie aus localStorage geladen wird (Nicht ideal für Produktion, aber zum Testen okay)
-      recipes.value = raw.map(item => normalize({ ...item, id: item.id ?? Math.random() }))
-      console.log('Rezepte geladen (localStorage):', recipes.value)
-    }
-  } catch (err) {
-    console.warn('Fehler beim Lesen von localStorage', err)
+  const ingredientsArr =
+    Array.isArray(item?.ingredients)
+      ? item.ingredients
+      : typeof item?.ingredients === 'string'
+        ? item.ingredients.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : []
+
+  const instructions = item?.instructions ?? item?.steps ?? ''
+
+  return {
+    id,
+    name,
+    category,
+    ingredients: ingredientsArr,
+    instructions,
+    image: item?.image,
+    time: item?.time,
+    difficulty: item?.difficulty
   }
 }
 
-// Zentrale Funktion zum Laden von Rezepten, verwendet Such- & Filterparameter
 async function loadRecipes() {
+  loading.value = true
+  error.value = null
   try {
-    // Rufe API mit den aktuellen Suchparametern auf
-    const data = await getRecipes(searchQuery.value)
+    const res = await getRecipes() // nutzt VITE_BACKEND_BASE_URL
+    const data = (res as any)?.data
 
-    // Die flexible Behandlung des Rückgabewerts muss beibehalten werden, falls axios oder wrapper verwendet wird
-    let resultData: any = data
-    if (data && typeof data === 'object' && 'data' in (data as any)) {
-      resultData = (data as any).data
+    if (!Array.isArray(data)) {
+      throw new Error('Backend liefert kein Array. Prüfe /recipes Response.')
     }
 
-    if (Array.isArray(resultData)) {
-      recipes.value = resultData.map(normalize)
-      console.log('Rezepte geladen (Backend):', recipes.value)
-      return
-    }
-    // Wenn das Backend fehlschlägt oder das Format falsch ist
-    console.warn('Unerwartetes Backend-Format/Fehler, lade localStorage')
-  } catch (err) {
-    console.warn('Backend nicht erreichbar oder Fehler bei Suche/Filter.', err)
-  }
-  loadFromLocalStorage()
-}
-
-// Löst die Suche aus (bei Klick oder Enter)
-function performSearch() {
-  loadRecipes()
-}
-
-// Setzt alle Suchfelder zurück
-function resetSearch() {
-  searchQuery.value.q = ''
-  searchQuery.value.category = ''
-  searchQuery.value.ingredient = ''
-  loadRecipes()
-}
-
-// Handler für den Löschen-Button
-async function deleteRecipeHandler(id: number) {
-  if (!confirm(`Soll das Rezept mit der ID ${id} wirklich gelöscht werden?`)) return
-
-  try {
-    await deleteRecipe(id)
-    console.log(`Rezept ${id} erfolgreich gelöscht.`)
-    // Lade die Liste neu, um den aktuellen Zustand zu sehen
-    await loadRecipes()
-  } catch (err) {
-    console.error('Fehler beim Löschen des Rezepts:', err)
-    alert('Fehler beim Löschen des Rezepts.')
+    recipes.value = data.map(normalize)
+  } catch (e: any) {
+    console.error(e)
+    error.value =
+      'Konnte Rezepte nicht laden. Prüfe VITE_BACKEND_BASE_URL und ob Backend läuft.'
+  } finally {
+    loading.value = false
   }
 }
 
-onMounted(() => {
-  // Lade Rezepte beim ersten Mounten
-  loadRecipes()
+const filteredRecipes = computed(() => {
+  const term = searchTerm.value.trim().toLowerCase()
+  const cat = selectedCategory.value
+
+  return recipes.value.filter(r => {
+    const matchesCategory = !cat || r.category === cat
+
+    const matchesSearch =
+      !term ||
+      r.name.toLowerCase().includes(term) ||
+      r.category.toLowerCase().includes(term) ||
+      r.ingredients.some(i => i.toLowerCase().includes(term)) ||
+      r.instructions.toLowerCase().includes(term)
+
+    return matchesCategory && matchesSearch
+  })
 })
+
+onMounted(loadRecipes)
 </script>
 
 <style scoped>
-/* Füge hier Styles für .search-filters und .delete-button hinzu, um die UI zu verbessern */
-h2 {
-  margin-left: 10%;
-}
-.search-filters {
-  margin: 20px 10%;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-.search-filters input, .search-filters select {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-ul {
-  list-style: none;
-  padding: 0 10%;
-}
-li {
-  border: 1px solid #eee;
-  padding: 15px;
-  margin-bottom: 10px;
-  border-radius: 6px;
-}
-.delete-button {
-  background-color: #f44336;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  cursor: pointer;
-  border-radius: 4px;
-  float: right;
-}
+.debug { margin-top: .75rem; color:#475569; }
+.err { color:#b91c1c; }
 </style>
