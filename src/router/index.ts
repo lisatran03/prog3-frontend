@@ -20,9 +20,10 @@ const router = createRouter({
 
     // 2. ERSTELLEN-ANSICHT
     {
-      path: '/neu',
+      path: '/neu/:id?',
       name: 'rezepte-erstellen',
-      component: RezepteErstellenView
+      component: RezepteErstellenView,
+      props: true
     },
 
     // 3. DETAILANSICHT (DER ZWECK DER LETZTEN SCHRITTE)

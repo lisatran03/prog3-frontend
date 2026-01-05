@@ -5,7 +5,7 @@
       <div class="container hero__inner">
         <div class="branding">
           <h1>Digitales Kochbuch</h1>
-          <p>Suche in deinen Rezepten aus der Datenbank.</p>
+          <p>Der Ort für deine besten Rezepte.</p>
         </div>
 
         <div class="search-panel">
@@ -40,7 +40,11 @@
     </header>
 
     <main class="container main">
-      <RecipeCards :recipes="filteredRecipes" @open="openRecipe" />
+      <RecipeCards
+        :recipes="filteredRecipes"
+        @open="openRecipe"
+        @delete="deleteRecipe"
+      />
 
       <p v-if="!loading && !error && filteredRecipes.length === 0" class="debug">
         Keine Treffer für deine Suche/Filter.
@@ -60,6 +64,7 @@
         </div>
         <footer class="dialog__footer">
           <button class="btn btn-ghost" value="cancel" type="submit">Schließen</button>
+          <button class="btn" @click="editRecipe">Bearbeiten</button>
         </footer>
       </form>
     </dialog>
@@ -69,7 +74,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import RecipeCards from '../components/RecipeCard.vue'
-import { getRecipes } from '../api'
+import { getRecipes, deleteRecipe as apiDeleteRecipe} from '../api'
+import { useRouter } from 'vue-router'
 
 type RecipeUI = {
   id: number
@@ -85,6 +91,17 @@ type RecipeUI = {
 const recipes = ref<RecipeUI[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+const router = useRouter()
+function editRecipe(recipe: RecipeUI | null) {
+  if (!recipe) return
+
+  // Dialog schließen
+  (document.getElementById('recipe-dialog') as HTMLDialogElement | null)?.close()
+
+  // Zur Bearbeitungsseite navigieren
+  router.push(`/neu/${recipe.id}`)
+}
+
 
 const searchTerm = ref('')
 const selectedCategory = ref('')
@@ -161,6 +178,15 @@ const filteredRecipes = computed(() => {
     return matchesCategory && matchesSearch
   })
 })
+const deleteRecipe = async (id: number) => {
+  try {
+    await apiDeleteRecipe(id)
+    await loadRecipes() // Liste neu laden
+  } catch (error) {
+    console.error('Fehler beim Löschen:', error)
+    alert('Das Rezept konnte nicht gelöscht werden.')
+  }
+}
 
 onMounted(loadRecipes)
 </script>
@@ -168,4 +194,19 @@ onMounted(loadRecipes)
 <style scoped>
 .debug { margin-top: .75rem; color:#475569; }
 .err { color:#b91c1c; }
+.btn-edit {
+  border-color: #3b82f6;
+  color: #2563eb;
+  margin-left: 0.5rem;}
+.btn-edit:hover {
+  border-color: #2563eb;
+  background-color: #dbeafe;
+}
+
+.dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--line);}
 </style>

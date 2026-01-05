@@ -21,9 +21,14 @@
           <span v-if="r.difficulty">{{ r.difficulty }}</span>
         </p>
 
-        <button class="btn btn-ghost" type="button" @click="$emit('open', r)">
-          Ansehen
-        </button>
+        <div class="card__actions">
+          <button class="btn btn-ghost" type="button" @click="$emit('open', r)">
+            Ansehen
+          </button>
+          <button class="btn btn-delete" type="button" @click="handleDelete(r)">
+            Löschen
+          </button>
+        </div>
       </div>
     </article>
   </section>
@@ -41,11 +46,12 @@ type RecipeCard = {
   difficulty?: string
 }
 
-defineProps<{ recipes: RecipeCard[] }>()
-
-defineEmits<{
+const emit = defineEmits<{
   (e: 'open', payload: RecipeCard): void
+  (e: 'delete', id: number): void
 }>()
+
+defineProps<{ recipes: RecipeCard[] }>()
 
 function pillClass(r: RecipeCard) {
   const c = (r.category || '').toLowerCase()
@@ -54,6 +60,12 @@ function pillClass(r: RecipeCard) {
     'pill--main': c.includes('haupt'),
     'pill--dessert': c.includes('dessert'),
     'pill--vegetarian': c.includes('vegetar')
+  }
+}
+
+function handleDelete(recipe: RecipeCard) {
+  if (confirm(`Möchten Sie das Rezept "${recipe.name}" wirklich löschen?`)) {
+    emit('delete', recipe.id)
   }
 }
 </script>
@@ -84,7 +96,36 @@ function pillClass(r: RecipeCard) {
 .pill--vegetarian { background: #42e2e8; }
 .card__body { padding: 0.9rem; display:flex; flex-direction:column; gap:0.5rem; }
 .card__title { margin:0; font-size:1rem; }
-.card__meta { color: #ffffff; font-size:0.875rem; margin:0; }
-.btn { align-self:flex-start; padding:0.45rem 0.7rem; border: 1px solid #49ad71; background: transparent; border-radius: 10px; cursor:pointer; color:#374151; }
-.btn:hover { border-color:#7c3aed; }
+.card__meta { color: #6b7280; font-size:0.875rem; margin:0; }
+
+.card__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.btn {
+  flex: 1;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #49ad71;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.btn:hover {
+  border-color: #7c3aed;
+}
+
+.btn-delete {
+  border-color: #ef4444;
+  color: #dc2626;
+}
+
+.btn-delete:hover {
+  border-color: #dc2626;
+  background-color: #fee2e2;
+}
 </style>

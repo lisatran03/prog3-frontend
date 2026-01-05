@@ -126,12 +126,17 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-// KORRIGIERT: Importiere die createRecipe Funktion
-import { createRecipe } from '../api'
+import { createRecipe, getRecipeById, updateRecipe } from '../api'
+
 
 const router = useRouter()
+// ID als Prop empfangen
+const props = defineProps<{
+  id?: string
+}>()
+const isEditing = computed(() => Boolean(props.id))
 
 type Difficulty = 'easy' | 'medium' | 'hard'
 
@@ -207,28 +212,39 @@ async function handleSubmit() {
     // KORRIGIERT: Schritte werden zu Anweisungen (instructions)
     const instructionsString = splitLines(stepsText.value).join('\n')
 
-    // 2. Erstellen des Objekts, wie es das BACKEND erwartet
-    const recipeForBackend = {
-      // name kommt direkt vom Formular
-      name: form.name,
+    async function loadRecipeForEditing() {
+      if (!props.id) return;
 
-      // Zutaten und Anweisungen sind Strings
+      try {
+        const response = await getRecipeById(Number(props.id));
+        const recipe = response.data;
+
+        // Das 'form'-Objekt mit den existierenden Daten füllen
+        form.name = recipe.name;
+        form.category = recipe.category;
+        form.time = recipe.time;
+        form.difficulty = recipe.difficulty;
+        form.imageUrl = recipe.imageUrl || '';
+
+        // Die Textareas für Zutaten und Schritte füllen
+        ingredientsText.value = recipe.ingredients; // Backend liefert String mit Umbrüchen
+        stepsText.value = recipe.instructions;
+      } catch (error) {
+        submitError.value = 'Rezept konnte nicht geladen werden.';
+      }
+    }
+
+    // 2. Erstellen des Objekts, wie es das BACKEND erwartet
+    const recipeForBackend: any = {
+      name: form.name,
       ingredients: ingredientsString,
       instructions: instructionsString,
-
-      // Kategorie ist ein Objekt
-      category: {
-        name: form.category
-      },
-
+      category: form.category,
       time: form.time,
       difficulty: form.difficulty,
       imageUrl: form.imageUrl || null
-
     }
 
-    // 3. KORRIGIERT: API-Aufruf über die createRecipe Funktion (axios POST)
-    await createRecipe(recipeForBackend)
 
     saved.value = true
     alert(`Rezept "${form.name}" erfolgreich erstellt!`)
@@ -268,6 +284,41 @@ function resetForm() {
   saved.value = false
   submitError.value = ''
 }
+// Laden des zu bearbeitenden Rezepts
+async function loadRecipeForEditing() {
+  if (!props.id) return
+
+  try {
+    const response = await getRecipeById(Number(props.id))
+    const recipe = response.data
+
+    // Formular mit den Daten füllen
+    form.name = recipe.name || recipe.title
+    form.category = recipe.category?.name || recipe.category
+    form.time = recipe.time
+    form.difficulty = recipe.difficulty || recipe.level
+    form.imageUrl = recipe.imageUrl || ''
+    form.isVegan = false // falls Sie diese Option haben
+
+    // Zutaten und Anweisungen in Textareas einfügen
+    ingredientsText.value = Array.isArray(recipe.ingredients)
+      ? recipe.ingredients.join('\n')
+      : recipe.ingredients
+
+    stepsText.value = recipe.instructions || recipe.description
+  } catch (error) {
+    console.error('Fehler beim Laden des Rezepts:', error)
+    submitError.value = 'Rezept konnte nicht geladen werden.'
+  }
+}
+
+// Komponente initialisieren
+onMounted(() => {
+  if (props.id) {
+    loadRecipeForEditing()
+  }
+})
+
 </script>
 
 <style scoped>
