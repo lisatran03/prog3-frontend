@@ -34,6 +34,13 @@ const router = createRouter({
       component: RecipeDetailView,
       // props: ID als Prop in RecipeDetailView ankommt
       props: true
+    },
+    // 4. BEARBEITEN-ANSICHT
+    {
+      path: '/neu/:id',
+      name: 'rezepte-bearbeiten',
+      component: RezepteErstellenView,
+      props: true
     }
   ],
 })

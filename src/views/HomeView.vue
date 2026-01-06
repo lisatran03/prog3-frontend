@@ -62,9 +62,12 @@
           <p><strong>Zutaten:</strong> {{ selected.ingredients.join(', ') }}</p>
           <p><strong>Anleitung:</strong> {{ selected.instructions }}</p>
         </div>
+
         <footer class="dialog__footer">
           <button class="btn btn-ghost" value="cancel" type="submit">Schließen</button>
-          <button class="btn" @click="editRecipe">Bearbeiten</button>
+          <button class="btn" type="button" @click="editRecipe(selected)">
+            Bearbeiten
+          </button>
         </footer>
       </form>
     </dialog>
@@ -74,7 +77,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import RecipeCards from '../components/RecipeCard.vue'
-import { getRecipes, deleteRecipe as apiDeleteRecipe} from '../api'
+import { getRecipes, deleteRecipe as apiDeleteRecipe } from '../api'
 import { useRouter } from 'vue-router'
 
 type RecipeUI = {
@@ -91,31 +94,32 @@ type RecipeUI = {
 const recipes = ref<RecipeUI[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
-const router = useRouter()
-function editRecipe(recipe: RecipeUI | null) {
-  if (!recipe) return
-
-  // Dialog schließen
-  (document.getElementById('recipe-dialog') as HTMLDialogElement | null)?.close()
-
-  // Zur Bearbeitungsseite navigieren
-  router.push(`/neu/${recipe.id}`)
-}
-
 
 const searchTerm = ref('')
 const selectedCategory = ref('')
 
 const selected = ref<RecipeUI | null>(null)
+
+const router = useRouter()
+
 function openRecipe(r: RecipeUI) {
   selected.value = r
   ;(document.getElementById('recipe-dialog') as HTMLDialogElement | null)?.showModal()
 }
 
+function editRecipe(recipe: RecipeUI | null) {
+  if (!recipe) return
+
+    // Dialog schließen
+    ;(document.getElementById('recipe-dialog') as HTMLDialogElement | null)?.close()
+
+  // Zur Bearbeitungsseite navigieren
+  router.push(`/neu/${recipe.id}`)
+}
+
 /** Robustes Normalize: egal ob Backend ingredients String oder Array liefert */
 function normalize(item: any): RecipeUI {
   const id = Number(item?.id ?? -1)
-
   const name = item?.name ?? item?.title ?? ''
   const category = item?.category?.name ?? item?.category ?? ''
 
@@ -123,7 +127,10 @@ function normalize(item: any): RecipeUI {
     Array.isArray(item?.ingredients)
       ? item.ingredients
       : typeof item?.ingredients === 'string'
-        ? item.ingredients.split(',').map((s: string) => s.trim()).filter(Boolean)
+        ? item.ingredients
+          .split(/\r?\n|,/)
+          .map((s: string) => s.trim())
+          .filter(Boolean)
         : []
 
   const instructions = item?.instructions ?? item?.steps ?? ''
@@ -144,18 +151,16 @@ async function loadRecipes() {
   loading.value = true
   error.value = null
   try {
-    const res = await getRecipes() // nutzt VITE_BACKEND_BASE_URL
+    const res = await getRecipes()
     const data = (res as any)?.data
 
     if (!Array.isArray(data)) {
       throw new Error('Backend liefert kein Array. Prüfe /recipes Response.')
     }
-
     recipes.value = data.map(normalize)
   } catch (e: any) {
     console.error(e)
-    error.value =
-      'Konnte Rezepte nicht laden. Prüfe VITE_BACKEND_BASE_URL und ob Backend läuft.'
+    error.value = 'Konnte Rezepte nicht laden. Prüfe VITE_BACKEND_BASE_URL und ob Backend läuft.'
   } finally {
     loading.value = false
   }
@@ -167,7 +172,6 @@ const filteredRecipes = computed(() => {
 
   return recipes.value.filter(r => {
     const matchesCategory = !cat || r.category === cat
-
     const matchesSearch =
       !term ||
       r.name.toLowerCase().includes(term) ||
@@ -178,12 +182,13 @@ const filteredRecipes = computed(() => {
     return matchesCategory && matchesSearch
   })
 })
+
 const deleteRecipe = async (id: number) => {
   try {
     await apiDeleteRecipe(id)
-    await loadRecipes() // Liste neu laden
-  } catch (error) {
-    console.error('Fehler beim Löschen:', error)
+    await loadRecipes()
+  } catch (err) {
+    console.error('Fehler beim Löschen:', err)
     alert('Das Rezept konnte nicht gelöscht werden.')
   }
 }
@@ -194,19 +199,12 @@ onMounted(loadRecipes)
 <style scoped>
 .debug { margin-top: .75rem; color:#475569; }
 .err { color:#b91c1c; }
-.btn-edit {
-  border-color: #3b82f6;
-  color: #2563eb;
-  margin-left: 0.5rem;}
-.btn-edit:hover {
-  border-color: #2563eb;
-  background-color: #dbeafe;
-}
 
 .dialog__footer {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
   padding: 1rem 1.25rem;
-  border-top: 1px solid var(--line);}
+  border-top: 1px solid var(--line);
+}
 </style>
