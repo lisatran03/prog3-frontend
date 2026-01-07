@@ -31,10 +31,8 @@
             <option value="">Bitte wählen…</option>
             <option>Vorspeisen</option>
             <option>Hauptgerichte</option>
-            <option>Desserts</option>
-            <option>Vegan</option>
+            <option>Dessert</option>
             <option>Vegetarisch</option>
-            <option>Glutenfrei</option>
           </select>
           <small v-if="errors.category" class="err">{{ errors.category }}</small>
         </label>
@@ -130,59 +128,47 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createRecipe, getRecipeById, updateRecipe } from '../api'
 
-
 const router = useRouter()
-// ID als Prop empfangen
+
 const props = defineProps<{
   id?: string
 }>()
-const isEditing = computed(() => Boolean(props.id))
+
+const isEditing = computed(() => !!props.id)
 
 type Difficulty = 'easy' | 'medium' | 'hard'
 
-// Interface für die Formular-Daten
 type RecipeForm = {
   name: string
   category: string
   time: number
   difficulty: Difficulty
   imageUrl?: string
-  isVegan: boolean
   notes?: string
 }
 
-// Formular-Objekt
 const form = reactive<RecipeForm>({
   name: '',
   category: '',
   time: 1,
   difficulty: 'easy',
   imageUrl: '',
-  isVegan: false,
   notes: ''
 })
 
-// Text-Eingaben für Zutaten/Schritte/Tags
 const ingredientsText = ref('')
 const stepsText = ref('')
 const tagsText = ref('')
 
-// UI-Status
 const submitting = ref(false)
 const saved = ref(false)
 const submitError = ref('')
 
-// Fehler je Feld (KORRIGIERT: Verwenden konsistente Namen wie 'name')
 const errors = reactive<Record<string, string>>({})
 
-// Text → Arrays Helfer
 const splitLines = (txt: string) =>
   txt.split('\n').map(s => s.trim()).filter(Boolean)
 
-const splitTags = (txt: string) =>
-  txt.split(',').map(s => s.trim()).filter(Boolean)
-
-// Einfache Frontend-Validierung
 function validate(): boolean {
   Object.keys(errors).forEach(k => delete errors[k])
 
@@ -190,15 +176,34 @@ function validate(): boolean {
   if (!form.category) errors.category = 'Bitte Kategorie wählen.'
   if (!form.time || form.time < 1) errors.time = 'Zeit muss ≥ 1 Minute sein.'
 
-  const ing = splitLines(ingredientsText.value)
-  const stp = splitLines(stepsText.value)
-  if (ing.length === 0) errors.ingredients = 'Mindestens 1 Zutat angeben.'
-  if (stp.length === 0) errors.steps = 'Mindestens 1 Anweisung angeben.'
+  if (splitLines(ingredientsText.value).length === 0) errors.ingredients = 'Mindestens 1 Zutat angeben.'
+  if (splitLines(stepsText.value).length === 0) errors.steps = 'Mindestens 1 Anweisung angeben.'
 
   return Object.keys(errors).length === 0
 }
 
-// Formular absenden → Daten an Spring-Backend schicken
+async function loadRecipeForEditing() {
+  if (!props.id) return
+
+  try {
+    const res = await getRecipeById(Number(props.id))
+    const recipe = res.data
+
+    form.name = recipe.name ?? ''
+    form.category = recipe.category?.name ?? recipe.category ?? ''
+    form.time = recipe.time ?? 1
+    form.difficulty = recipe.difficulty ?? 'easy'
+    form.imageUrl = recipe.imageUrl ?? ''
+
+    // Backend liefert ingredients/instructions als String (TEXT)
+    ingredientsText.value = recipe.ingredients ?? ''
+    stepsText.value = recipe.instructions ?? ''
+  } catch (e) {
+    console.error(e)
+    submitError.value = 'Rezept konnte nicht geladen werden.'
+  }
+}
+
 async function handleSubmit() {
   submitError.value = ''
   saved.value = false
@@ -207,73 +212,50 @@ async function handleSubmit() {
 
   submitting.value = true
   try {
-    // 1. Strings aus Textareas vorbereiten
+    // Backend will Strings:
     const ingredientsString = splitLines(ingredientsText.value).join('\n')
-    // KORRIGIERT: Schritte werden zu Anweisungen (instructions)
     const instructionsString = splitLines(stepsText.value).join('\n')
 
-    async function loadRecipeForEditing() {
-      if (!props.id) return;
-
-      try {
-        const response = await getRecipeById(Number(props.id));
-        const recipe = response.data;
-
-        // Das 'form'-Objekt mit den existierenden Daten füllen
-        form.name = recipe.name;
-        form.category = recipe.category;
-        form.time = recipe.time;
-        form.difficulty = recipe.difficulty;
-        form.imageUrl = recipe.imageUrl || '';
-
-        // Die Textareas für Zutaten und Schritte füllen
-        ingredientsText.value = recipe.ingredients; // Backend liefert String mit Umbrüchen
-        stepsText.value = recipe.instructions;
-      } catch (error) {
-        submitError.value = 'Rezept konnte nicht geladen werden.';
-      }
-    }
-
-    // 2. Erstellen des Objekts, wie es das BACKEND erwartet
-    const recipeForBackend: any = {
+    // !!! WICHTIG: category als Objekt { name: ... } (weil Backend r.getCategory().getName() macht)
+    const payload = {
       name: form.name,
       ingredients: ingredientsString,
       instructions: instructionsString,
-      category: form.category,
+      category: { name: form.category },
       time: form.time,
       difficulty: form.difficulty,
       imageUrl: form.imageUrl || null
     }
 
-
-    saved.value = true
-    alert(`Rezept "${form.name}" erfolgreich erstellt!`)
-
-    // Weiterleitung zur Rezeptliste
-    router.push('/')
-
-  } catch (e: unknown) {
-    let errorMessage = 'Unbekannter Fehler beim Speichern.';
-    if (e && typeof e === 'object' && 'message' in e) {
-      errorMessage = String(e.message);
-    } else if (e instanceof Error) {
-      errorMessage = e.message;
+    if (isEditing.value && props.id) {
+      await updateRecipe(Number(props.id), payload)
+      alert(`Rezept "${form.name}" erfolgreich aktualisiert!`)
+    } else {
+      await createRecipe(payload)
+      alert(`Rezept "${form.name}" erfolgreich erstellt!`)
     }
 
-    submitError.value = errorMessage;
+    saved.value = true
+
+    // zurück zur Liste
+    router.push('/')
+  } catch (e: any) {
+    console.error(e)
+    submitError.value =
+      e?.response?.data?.message ||
+      e?.message ||
+      'Unbekannter Fehler beim Speichern.'
   } finally {
     submitting.value = false
   }
 }
 
-// Formular leeren
 function resetForm() {
   form.name = ''
   form.category = ''
   form.time = 1
   form.difficulty = 'easy'
   form.imageUrl = ''
-  form.isVegan = false
   form.notes = ''
 
   ingredientsText.value = ''
@@ -284,42 +266,15 @@ function resetForm() {
   saved.value = false
   submitError.value = ''
 }
-// Laden des zu bearbeitenden Rezepts
-async function loadRecipeForEditing() {
-  if (!props.id) return
 
-  try {
-    const response = await getRecipeById(Number(props.id))
-    const recipe = response.data
-
-    // Formular mit den Daten füllen
-    form.name = recipe.name || recipe.title
-    form.category = recipe.category?.name || recipe.category
-    form.time = recipe.time
-    form.difficulty = recipe.difficulty || recipe.level
-    form.imageUrl = recipe.imageUrl || ''
-    form.isVegan = false // falls Sie diese Option haben
-
-    // Zutaten und Anweisungen in Textareas einfügen
-    ingredientsText.value = Array.isArray(recipe.ingredients)
-      ? recipe.ingredients.join('\n')
-      : recipe.ingredients
-
-    stepsText.value = recipe.instructions || recipe.description
-  } catch (error) {
-    console.error('Fehler beim Laden des Rezepts:', error)
-    submitError.value = 'Rezept konnte nicht geladen werden.'
-  }
-}
-
-// Komponente initialisieren
 onMounted(() => {
-  if (props.id) {
-    loadRecipeForEditing()
-  }
+  if (props.id) loadRecipeForEditing()
 })
 
+// Exports für Template
+// (in <script setup> automatisch verfügbar)
 </script>
+
 
 <style scoped>
 /* ... (deine bestehenden Styles) ... */

@@ -37,7 +37,7 @@ const router = createRouter({
     },
     // 4. BEARBEITEN-ANSICHT
     {
-      path: '/neu/:id',
+      path: '/neu/:id?',
       name: 'rezepte-bearbeiten',
       component: RezepteErstellenView,
       props: true
