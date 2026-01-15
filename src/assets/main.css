@@ -2,6 +2,98 @@
  * TEIL 1 — Basis: Variablen, Container, kleine Resets
  *******************************************************/
 
+/* Theme Toggle Switch */
+.theme-switch {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 30px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #f6f6f6;
+  transition: .4s;
+  border-radius: 30px;
+  border: 2px solid var(--line);
+}
+
+.slider:before {
+  position: absolute;
+  content: "☀️";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input:checked + .slider {
+  background-color: #020617;
+}
+
+input:checked + .slider:before {
+  transform: translateX(29px);
+  content: "🌙";
+  background-color: #111827;
+}
+
+[data-theme="dark"] {
+  --bg-page:#020617;
+  --bg-elevated:#020617;
+  --ink:#e5e7eb;
+  --muted:#9ca3af;
+  --line:#111827;
+  --field-bg:#020617;
+  --field-border:#4b5563;
+  --media-bg:#0b1120;
+  --wave-fill:#020617;
+  --btn-border:#4b5563;
+  --btn-bg-top:#111827;
+  --btn-bg-bottom:#020617;
+}
+
+[data-theme="light"] {
+  --bg-page:#fafafa;
+  --bg-elevated:#ffffff;
+  --ink:#0f172a;
+  --muted:#5b6473;
+  --line:#e5e7eb;
+  --field-bg:#ffffff;
+  --field-border:#cfd3e1;
+  --media-bg:#f5f6fb;
+  --wave-fill:#ffffff;
+  --btn-border:#c9cbe0;
+  --btn-bg-top:#ffffff;
+  --btn-bg-bottom:#f7f8ff;
+}
 /* Standard: LIGHT MODE */
 :root{
   /* Grundfarben */
@@ -275,4 +367,47 @@ body{
   color:var(--muted);
   font-size:.92rem;
   margin: 1.1rem 0 1.6rem;
+}
+/* =====================================================
+   BUTTON OVERRIDE (gewinnt immer gegen System Dark Mode)
+   ===================================================== */
+
+html[data-theme="dark"]{
+  --bg-page:#020617;
+  --bg-elevated:#020617;
+  --ink:#e5e7eb;
+  --muted:#9ca3af;
+  --line:#111827;
+
+  --field-bg:#020617;
+  --field-border:#4b5563;
+  --media-bg:#0b1120;
+  --wave-fill:#020617;
+
+  --btn-border:#4b5563;
+  --btn-bg-top:#111827;
+  --btn-bg-bottom:#020617;
+
+  --cta-bg:#111827;
+  --cta-fg:#ffffff;
+}
+
+html[data-theme="light"]{
+  --bg-page:#fafafa;
+  --bg-elevated:#ffffff;
+  --ink:#0f172a;
+  --muted:#5b6473;
+  --line:#e5e7eb;
+
+  --field-bg:#ffffff;
+  --field-border:#cfd3e1;
+  --media-bg:#f5f6fb;
+  --wave-fill:#ffffff;
+
+  --btn-border:#c9cbe0;
+  --btn-bg-top:#ffffff;
+  --btn-bg-bottom:#f7f8ff;
+
+  --cta-bg:#111827;
+  --cta-fg:#ffffff;
 }
