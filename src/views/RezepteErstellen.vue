@@ -99,16 +99,6 @@
           ></textarea>
           <small v-if="errors.steps" class="err">{{ errors.steps }}</small>
         </label>
-
-        <label class="field">
-          <span class="label">Tags (kommagetrennt)</span>
-          <input v-model.trim="tagsText" type="text" placeholder="scharf, schnell" />
-        </label>
-
-        <label class="field">
-          <span class="label">Notizen</span>
-          <textarea v-model.trim="form.notes" rows="3" placeholder="z. B. Gut einfrierbar."></textarea>
-        </label>
       </fieldset>
 
       <div class="actions">
@@ -144,7 +134,6 @@ type RecipeForm = {
   time: number
   difficulty: Difficulty
   imageUrl?: string
-  notes?: string
 }
 
 const form = reactive<RecipeForm>({
@@ -153,7 +142,6 @@ const form = reactive<RecipeForm>({
   time: 1,
   difficulty: 'easy',
   imageUrl: '',
-  notes: ''
 })
 
 const ingredientsText = ref('')
@@ -256,7 +244,6 @@ function resetForm() {
   form.time = 1
   form.difficulty = 'easy'
   form.imageUrl = ''
-  form.notes = ''
 
   ingredientsText.value = ''
   stepsText.value = ''
