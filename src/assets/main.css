@@ -68,7 +68,7 @@ input:checked + .slider:before {
 [data-theme="dark"] {
   --bg-page:#020617;
   --bg-elevated:#020617;
-  --ink:#e5e7eb;
+  --ink: #0c0c0c;
   --muted:#9ca3af;
   --line:#111827;
   --field-bg:#020617;
@@ -129,7 +129,7 @@ input:checked + .slider:before {
   :root{
     --bg-page:#020617;
     --bg-elevated:#020617;
-    --ink:#e5e7eb;
+    --ink: #0c0c0c;
     --muted:#9ca3af;
     --line:#111827;
 
@@ -281,6 +281,7 @@ body{
   flex-direction:column;
   transition: transform .18s ease, box-shadow .18s ease;
   box-shadow: 0 1px 0 rgba(0,0,0,.02);
+  color: #0f172a;
 }
 .card:hover{
   transform: translateY(-3px);
