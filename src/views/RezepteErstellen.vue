@@ -224,7 +224,7 @@ async function handleSubmit() {
       category: { name: form.category },
       time: form.time,
       difficulty: form.difficulty,
-      imageUrl: form.imageUrl || null
+      imageUrl: form.imageUrl || undefined
     }
 
     if (isEditing.value && props.id) {

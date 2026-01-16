@@ -63,7 +63,7 @@ describe('RecipeCard.vue', () => {
     })
 
     const firstCard = wrapper.findAll('.card')[0]
-    const ansehenBtn = firstCard.find('button.btn-ghost')
+    const ansehenBtn = firstCard!.find('button.btn-ghost')
 
     await ansehenBtn.trigger('click')
 
@@ -78,7 +78,7 @@ describe('RecipeCard.vue', () => {
     })
 
     const firstCard = wrapper.findAll('.card')[0]
-    const deleteBtn = firstCard.find('button.btn-delete')
+    const deleteBtn = firstCard!.find('button.btn-delete')
 
     await deleteBtn.trigger('click')
 
@@ -96,7 +96,7 @@ describe('RecipeCard.vue', () => {
     })
 
     const firstCard = wrapper.findAll('.card')[0]
-    const deleteBtn = firstCard.find('button.btn-delete')
+    const deleteBtn = firstCard!.find('button.btn-delete')
 
     await deleteBtn.trigger('click')
 
@@ -109,7 +109,7 @@ describe('RecipeCard.vue', () => {
     })
 
     const secondCard = wrapper.findAll('.card')[1]
-    const pill = secondCard.find('.pill')
+    const pill = secondCard!.find('.pill')
     expect(pill.classes()).toContain('pill--vegetarian')
   })
 })
