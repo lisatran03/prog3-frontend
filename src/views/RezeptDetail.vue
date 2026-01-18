@@ -51,7 +51,6 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { getRecipeById } from '../api'
 
 // 1. PROPS DEFINIEREN
-// Der Router übergibt die ID als String, da sie Teil der URL ist
 const props = defineProps<{
   id: string
 }>()
@@ -71,14 +70,11 @@ const isLoading = ref(true)
 const error = ref<string | null>(null)
 
 // 4. COMPUTED PROPERTIES FÜR DIE FORMATIERUNG
-// Hilfsfunktion, um Zutaten als Liste darzustellen (splittet am Komma/Semikolon)
 const formattedIngredients = computed(() => {
   if (!recipe.value?.ingredients) return []
-  // Splittet den String an Komma und trimmt Leerzeichen
   return recipe.value.ingredients.split(/, |; ?/).filter(i => i.trim().length > 0)
 })
 
-// Hilfsfunktion, um Anweisungen als Schritte darzustellen (Splittet an Zeilenumbrüchen oder Punkten, ist aber stark Backend-abhängig)
 const formattedInstructions = computed(() => {
   if (!recipe.value?.instructions) return []
   // Für die saubere Darstellung im Frontend: Splitten am Punkt gefolgt von Leerzeichen.
@@ -105,7 +101,6 @@ async function fetchRecipe() {
     const response = await getRecipeById(recipeId)
     const recipeData = response.data; // <--- HIER SIND DIE REZEPTDATEN
 
-    // Logik zur Normalisierung der Category (falls sie als Objekt kommt)
     const normalizedData = {
       ...recipeData,
       category: typeof recipeData.category === 'object' && recipeData.category !== null
@@ -122,12 +117,9 @@ async function fetchRecipe() {
   }
 }
 
-// Beobachtet die ID-Prop, falls sich die URL ändert (z.B. von /recipe/1 zu /recipe/2)
 watch(() => props.id, fetchRecipe, { immediate: true })
 
 onMounted(() => {
-  // Wenn `watch` mit `{ immediate: true }` verwendet wird, muss `fetchRecipe` nicht extra hier aufgerufen werden
-  // fetchRecipe()
 })
 </script>
 
@@ -200,7 +192,7 @@ onMounted(() => {
 .ingredient-list {
   list-style: none;
   padding: 0;
-  columns: 2; /* Versucht, die Liste in zwei Spalten darzustellen */
+  columns: 2;
   column-gap: 40px;
 }
 
@@ -217,7 +209,6 @@ onMounted(() => {
   left: 0;
 }
 
-/* Zubereitungsanweisungen */
 .instructions-list {
   padding-left: 20px;
 }

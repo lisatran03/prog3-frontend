@@ -13,7 +13,6 @@ const router = createRouter({
     // 1. HAUPTANSICHT (STARTSEITE)
     {
       path: '/',
-      // Wir verwenden HomeView als Container für die gesamte Liste
       name: 'home',
       component: HomeView
     },
@@ -26,13 +25,11 @@ const router = createRouter({
       props: true
     },
 
-    // 3. DETAILANSICHT (DER ZWECK DER LETZTEN SCHRITTE)
+    // 3. DETAILANSICHT
     {
-      // :id ist der Platzhalter für die ID (z.B. /recipe/123)
       path: '/recipe/:id',
       name: 'recipe-detail',
       component: RecipeDetailView,
-      // props: ID als Prop in RecipeDetailView ankommt
       props: true
     },
     // 4. BEARBEITEN-ANSICHT

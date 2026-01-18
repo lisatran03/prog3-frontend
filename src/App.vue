@@ -27,7 +27,6 @@ export default {
   methods: {
     toggleTheme() {
       this.isDarkMode = !this.isDarkMode;
-      // Theme direkt auf dem root-Element setzen
       document.documentElement.setAttribute(
         'data-theme',
         this.isDarkMode ? 'dark' : 'light'
@@ -38,7 +37,7 @@ export default {
   mounted() {
     const savedTheme = localStorage.getItem('theme');
 
-    const themeToApply = savedTheme ?? 'light'; // <-- default light
+    const themeToApply = savedTheme ?? 'light';
 
     this.isDarkMode = themeToApply === 'dark';
     document.documentElement.setAttribute('data-theme', themeToApply);

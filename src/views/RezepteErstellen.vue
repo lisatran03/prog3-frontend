@@ -183,7 +183,6 @@ async function loadRecipeForEditing() {
     form.difficulty = recipe.difficulty ?? 'easy'
     form.imageUrl = recipe.imageUrl ?? ''
 
-    // Backend liefert ingredients/instructions als String (TEXT)
     ingredientsText.value = recipe.ingredients ?? ''
     stepsText.value = recipe.instructions ?? ''
   } catch (e) {
@@ -200,11 +199,9 @@ async function handleSubmit() {
 
   submitting.value = true
   try {
-    // Backend will Strings:
     const ingredientsString = splitLines(ingredientsText.value).join('\n')
     const instructionsString = splitLines(stepsText.value).join('\n')
 
-    // !!! WICHTIG: category als Objekt { name: ... } (weil Backend r.getCategory().getName() macht)
     const payload = {
       name: form.name,
       ingredients: ingredientsString,
@@ -212,7 +209,7 @@ async function handleSubmit() {
       category: { name: form.category },
       time: form.time,
       difficulty: form.difficulty,
-      imageUrl: form.imageUrl || undefined
+      imageUrl: form.imageUrl?.trim() ? form.imageUrl.trim() : undefined
     }
 
     if (isEditing.value && props.id) {
@@ -258,13 +255,8 @@ onMounted(() => {
   if (props.id) loadRecipeForEditing()
 })
 
-// Exports für Template
-// (in <script setup> automatisch verfügbar)
 </script>
-
-
 <style scoped>
-/* ... (deine bestehenden Styles) ... */
 
 .page { padding: 1rem 0 2rem; }
 .muted { color: #64748b; margin: .25rem 0 1rem; }

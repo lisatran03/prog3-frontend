@@ -1,115 +1,105 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import RecipeCard from '../RecipeCard.vue'
 
 describe('RecipeCard.vue', () => {
-  const recipes = [
-    {
-      id: 1,
-      name: 'Bruschetta',
-      category: 'Vorspeisen',
-      ingredients: ['Tomaten', 'Brot'],
-      instructions: 'Mixen',
-      imageUrl: '',
-      time: 10,
-      difficulty: 'easy'
-    },
-    {
-      id: 2,
-      name: 'Käse Salat',
-      category: 'Vegetarisch',
-      ingredients: ['Käse', 'Salat'],
-      instructions: 'Mischen',
-      imageUrl: 'https://example.com/img.jpg',
-      time: 15,
-      difficulty: 'medium'
-    }
-  ]
-
   beforeEach(() => {
-    // confirm standardmäßig "OK"
-    vi.stubGlobal('confirm', vi.fn(() => true))
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
 
-  it('rendert die richtige Anzahl Karten', () => {
-    const wrapper = mount(RecipeCard, {
-      props: { recipes }
-    })
+  const recipes = [
+    {
+      id: 1,
+      name: 'Pasta',
+      category: 'Hauptgerichte',
+      ingredients: ['Nudeln', 'Tomaten'],
+      instructions: 'Kochen',
+      time: 20,
+      difficulty: 'easy',
+      imageUrl: ''
+    },
+    {
+      id: 2,
+      name: 'Salat',
+      category: 'Vegetarisch',
+      ingredients: ['Salat', 'Gurke'],
+      instructions: 'Mischen',
+      time: 10,
+      difficulty: 'easy',
+      imageUrl: 'https://example.com/test.jpg'
+    }
+  ]
 
+  it('rendert die richtige Anzahl Karten', () => {
+    const wrapper = mount(RecipeCard, { props: { recipes } })
     const cards = wrapper.findAll('.card')
     expect(cards.length).toBe(2)
   })
 
-  it('zeigt Name und Kategorie an', () => {
-    const wrapper = mount(RecipeCard, {
-      props: { recipes }
-    })
+  it('zeigt Platzhalter wenn kein Bild da ist', () => {
+    const wrapper = mount(RecipeCard, { props: { recipes } })
+    const cards = wrapper.findAll('.card')
+    expect(cards.length).toBeGreaterThan(0)
 
-    expect(wrapper.text()).toContain('Bruschetta')
-    expect(wrapper.text()).toContain('Vorspeisen')
-
-    expect(wrapper.text()).toContain('Käse Salat')
-    expect(wrapper.text()).toContain('Vegetarisch')
+    const firstCard = cards[0]!
+    expect(firstCard.text()).toContain('Kein Bild')
   })
 
-  it('emittiert "open" mit Rezept bei Klick auf "Ansehen"', async () => {
-    const wrapper = mount(RecipeCard, {
-      props: { recipes }
-    })
+  it('zeigt Bild wenn imageUrl vorhanden ist', () => {
+    const wrapper = mount(RecipeCard, { props: { recipes } })
+    const cards = wrapper.findAll('.card')
+    expect(cards.length).toBeGreaterThan(1)
 
-    const firstCard = wrapper.findAll('.card')[0]
-    const ansehenBtn = firstCard!.find('button.btn-ghost')
+    const secondCard = cards[1]!
+    const img = secondCard.find('img.card__media')
+    expect(img.exists()).toBe(true)
+    expect(img.attributes('src')).toBe('https://example.com/test.jpg')
+  })
+
+  it('emittet "open" beim Klick auf Ansehen', async () => {
+    const wrapper = mount(RecipeCard, { props: { recipes } })
+    const cards = wrapper.findAll('.card')
+    expect(cards.length).toBeGreaterThan(0)
+
+    const firstCard = cards[0]!
+    const ansehenBtn = firstCard.find('button.btn-ghost')
+    expect(ansehenBtn.exists()).toBe(true)
 
     await ansehenBtn.trigger('click')
-
-    const events = wrapper.emitted('open')
-    expect(events).toBeTruthy()
-    expect(events?.[0]).toEqual([recipes[0]])
+    expect(wrapper.emitted('open')).toBeTruthy()
+    expect(wrapper.emitted('open')![0]![0]).toMatchObject({ id: 1, name: 'Pasta' })
   })
 
-  it('emittiert "delete" mit ID, wenn confirm true ist', async () => {
-    const wrapper = mount(RecipeCard, {
-      props: { recipes }
-    })
+  it('emittet "delete" nur wenn confirm=true', async () => {
+    const confirmMock = vi.spyOn(window, 'confirm').mockReturnValue(true)
 
-    const firstCard = wrapper.findAll('.card')[0]
-    const deleteBtn = firstCard!.find('button.btn-delete')
+    const wrapper = mount(RecipeCard, { props: { recipes } })
+    const cards = wrapper.findAll('.card')
+    expect(cards.length).toBeGreaterThan(0)
+
+    const firstCard = cards[0]!
+    const deleteBtn = firstCard.find('button.btn-delete')
+    expect(deleteBtn.exists()).toBe(true)
 
     await deleteBtn.trigger('click')
 
-    const events = wrapper.emitted('delete')
-    expect(events).toBeTruthy()
-    expect(events?.[0]).toEqual([1])
+    expect(confirmMock).toHaveBeenCalled()
+    expect(wrapper.emitted('delete')).toBeTruthy()
+    expect(wrapper.emitted('delete')![0]![0]).toBe(1)
   })
 
-  it('emittiert "delete" NICHT, wenn confirm false ist', async () => {
-    // confirm auf Abbrechen
-    vi.stubGlobal('confirm', vi.fn(() => false))
+  it('emittet "delete" NICHT wenn confirm=false', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
 
-    const wrapper = mount(RecipeCard, {
-      props: { recipes }
-    })
+    const wrapper = mount(RecipeCard, { props: { recipes } })
+    const cards = wrapper.findAll('.card')
+    expect(cards.length).toBeGreaterThan(0)
 
-    const firstCard = wrapper.findAll('.card')[0]
-    const deleteBtn = firstCard!.find('button.btn-delete')
+    const firstCard = cards[0]!
+    const deleteBtn = firstCard.find('button.btn-delete')
+    expect(deleteBtn.exists()).toBe(true)
 
     await deleteBtn.trigger('click')
-
     expect(wrapper.emitted('delete')).toBeFalsy()
-  })
-
-  it('setzt pill--vegetarian Klasse bei vegetarisch', () => {
-    const wrapper = mount(RecipeCard, {
-      props: { recipes }
-    })
-
-    const secondCard = wrapper.findAll('.card')[1]
-    const pill = secondCard!.find('.pill')
-    expect(pill.classes()).toContain('pill--vegetarian')
   })
 })

@@ -110,14 +110,9 @@ function openRecipe(r: RecipeUI) {
 function editRecipe(recipe: RecipeUI | null) {
   if (!recipe) return
 
-    // Dialog schließen
     ;(document.getElementById('recipe-dialog') as HTMLDialogElement | null)?.close()
-
-  // Zur Bearbeitungsseite navigieren
   router.push(`/neu/${recipe.id}`)
 }
-
-/** Robustes Normalize: egal ob Backend ingredients String oder Array liefert */
 function normalize(item: any): RecipeUI {
   const id = Number(item?.id ?? -1)
   const name = item?.name ?? item?.title ?? ''

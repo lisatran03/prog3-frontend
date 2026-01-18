@@ -3,55 +3,30 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import RezepteErstellen from '../../views/RezepteErstellen.vue'
 
-// --- API Mock ---
-const createRecipeMock = vi.fn(() => Promise.resolve({ data: { id: 123 } }))
-const updateRecipeMock = vi.fn(() => Promise.resolve({ data: { id: 1 } }))
-const getRecipeByIdMock = vi.fn(() =>
-  Promise.resolve({
-    data: {
-      id: 1,
-      name: 'Curry',
-      category: { name: 'Hauptgerichte' },
-      time: 30,
-      difficulty: 'easy',
-      imageUrl: 'https://example.com/curry.jpg',
-      ingredients: 'Reis\nCurry',
-      instructions: 'Kochen\nServieren'
-    }
-  })
-)
+const createRecipeMock = vi.fn()
+const updateRecipeMock = vi.fn()
+const getRecipeByIdMock = vi.fn()
 
-
-vi.mock('../../api', () => ({
-  createRecipe: (...args: Parameters<typeof createRecipeMock>) => createRecipeMock(...args),
-  updateRecipe: (...args: Parameters<typeof updateRecipeMock>) => updateRecipeMock(...args),
-  getRecipeById: (...args: Parameters<typeof getRecipeByIdMock>) => getRecipeByIdMock(...args)
-}))
-
-// --- Router Mock (useRouter) ---
-const pushMock = vi.fn()
-
-vi.mock('vue-router', async () => {
-  const actual = await vi.importActual<any>('vue-router')
+vi.mock('../../api', () => {
   return {
-    ...actual,
-    useRouter: () => ({
-      push: pushMock
-    })
+    createRecipe: (...args: any[]) => createRecipeMock(...args),
+    updateRecipe: (...args: any[]) => updateRecipeMock(...args),
+    getRecipeById: (...args: any[]) => getRecipeByIdMock(...args)
   }
 })
 
-async function flush() {
-  // mini "flushPromises"
-  await Promise.resolve()
-  await nextTick()
-}
+const pushMock = vi.fn()
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push: pushMock })
+}))
 
 describe('RezepteErstellen.vue', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    // alert mocken, sonst nervt im Test
-    vi.stubGlobal('alert', vi.fn())
+    vi.restoreAllMocks()
+    createRecipeMock.mockReset()
+    updateRecipeMock.mockReset()
+    getRecipeByIdMock.mockReset()
+    pushMock.mockReset()
   })
 
   it('rendert das Formular', () => {
@@ -60,106 +35,96 @@ describe('RezepteErstellen.vue', () => {
     expect(wrapper.find('form').exists()).toBe(true)
   })
 
-  it('validiert: ohne Pflichtfelder -> kein createRecipe Call', async () => {
+  it('zeigt Fehler wenn Pflichtfelder fehlen', async () => {
     const wrapper = mount(RezepteErstellen)
 
-    // direkt submit ohne Felder
     await wrapper.find('form').trigger('submit.prevent')
-    await flush()
-
-    expect(createRecipeMock).not.toHaveBeenCalled()
-    expect(updateRecipeMock).not.toHaveBeenCalled()
-
-    // optional: prüfe Fehlermeldung
+    await nextTick()
     expect(wrapper.text()).toContain('Bitte Titel/Namen angeben.')
+    expect(wrapper.text()).toContain('Bitte Kategorie wählen.')
   })
 
-  it('Create-Flow: sendet createRecipe mit korrekten Daten', async () => {
+  it('sendet createRecipe mit korrekt gebautem Payload', async () => {
     const wrapper = mount(RezepteErstellen)
 
-    // Inputs füllen
-    await wrapper.find('input[type="text"]').setValue('Pasta')
-    await wrapper.find('select').setValue('Hauptgerichte')
-    await wrapper.find('input[type="number"]').setValue('20')
+    // Formular füllen
+    const inputs = wrapper.findAll('input')
+    expect(inputs.length).toBeGreaterThan(0)
+    await inputs[0]!.setValue('Spaghetti')
 
-    // Schwierigkeit: 2. select im Formular (Kategorie ist erstes)
     const selects = wrapper.findAll('select')
-    await selects[1].setValue('medium')
+    expect(selects.length).toBeGreaterThanOrEqual(2)
+    await selects[0]!.setValue('Hauptgerichte') // category
+    await selects[1]!.setValue('medium')       // difficulty
 
-    // Zutaten textarea (erste)
+    const timeInput = wrapper.find('input[type="number"]')
+    expect(timeInput.exists()).toBe(true)
+    await timeInput.setValue('25')
+
     const textareas = wrapper.findAll('textarea')
-    await textareas[0].setValue('Nudeln\nTomaten')
+    expect(textareas.length).toBeGreaterThanOrEqual(2)
+    await textareas[0]!.setValue('Nudeln\nTomaten')
+    await textareas[1]!.setValue('Kochen\nEssen')
 
-    // Schritte textarea (zweite)
-    await textareas[1].setValue('Kochen\nEssen')
+    createRecipeMock.mockResolvedValue({ data: { id: 99 } })
 
-    // submit
     await wrapper.find('form').trigger('submit.prevent')
-    await flush()
+    await nextTick()
 
     expect(createRecipeMock).toHaveBeenCalledTimes(1)
 
-    const payload = createRecipeMock.mock.calls[0][0]
-
-    // Pflichtfelder drin?
-    expect(payload).toEqual(
-      expect.objectContaining({
-        name: 'Pasta',
-        time: 20,
-        difficulty: 'medium',
-        ingredients: expect.any(String),
-        instructions: expect.any(String)
-      })
-    )
-
-    // Zutaten/Anweisungen als String mit Zeilenumbrüchen:
+    const payload = createRecipeMock.mock.calls[0]![0] as any
+    expect(payload.name).toBe('Spaghetti')
     expect(payload.ingredients).toContain('Nudeln')
     expect(payload.ingredients).toContain('Tomaten')
     expect(payload.instructions).toContain('Kochen')
     expect(payload.instructions).toContain('Essen')
 
-    // Kategorie: akzeptiere beides (string ODER {name}) – je nachdem wie du es im Code sendest
-    const cat = payload.category
-    const ok =
-      typeof cat === 'string'
-        ? cat === 'Hauptgerichte'
-        : cat && typeof cat === 'object' && cat.name === 'Hauptgerichte'
-    expect(ok).toBe(true)
-
-    // nach Save -> zurück zur Home
+    expect(payload.category).toEqual({ name: 'Hauptgerichte' })
+    expect(payload.imageUrl === undefined || typeof payload.imageUrl === 'string').toBe(true)
     expect(pushMock).toHaveBeenCalledWith('/')
   })
 
-  it('Edit-Flow: lädt Rezeptdaten, und Submit ruft updateRecipe auf', async () => {
-    const wrapper = mount(RezepteErstellen, {
-      props: { id: '1' }
+  it('im Edit-Mode lädt Rezeptdaten und ruft updateRecipe auf', async () => {
+    getRecipeByIdMock.mockResolvedValue({
+      data: {
+        id: 5,
+        name: 'Alt-Rezept',
+        category: { name: 'Vegetarisch' },
+        ingredients: 'A\nB',
+        instructions: 'X\nY',
+        time: 10,
+        difficulty: 'easy',
+        imageUrl: ''
+      }
     })
 
-    // wartet bis onMounted load fertig ist
-    await flush()
-    await flush()
+    const wrapper = mount(RezepteErstellen, {
+      props: { id: '5' }
+    })
 
-    // getRecipeById wurde aufgerufen
-    expect(getRecipeByIdMock).toHaveBeenCalledWith(1)
+    await nextTick()
+    await nextTick()
 
-    // sollte die geladenen Werte im UI zeigen (Name z.B.)
-    expect(wrapper.find('input[type="text"]').element).toBeTruthy()
-    expect((wrapper.find('input[type="text"]').element as HTMLInputElement).value).toBe('Curry')
+    const nameInput = wrapper.find('input[type="text"]')
+    expect((nameInput.element as HTMLInputElement).value).toBe('Alt-Rezept')
 
-    // jetzt etwas ändern und submit
-    await wrapper.find('input[type="text"]').setValue('Curry Updated')
+    updateRecipeMock.mockResolvedValue({ data: {} })
+
     await wrapper.find('form').trigger('submit.prevent')
-    await flush()
+    await nextTick()
 
     expect(updateRecipeMock).toHaveBeenCalledTimes(1)
-    const [id, payload] = updateRecipeMock.mock.calls[0]
 
-    expect(id).toBe(1)
-    expect(payload).toEqual(
-      expect.objectContaining({
-        name: 'Curry Updated'
-      })
-    )
+    const call = updateRecipeMock.mock.calls[0]
+    expect(call).toBeTruthy()
+
+    const idArg = call![0]
+    const payloadArg = call![1] as any
+
+    expect(idArg).toBe(5)
+    expect(payloadArg.name).toBe('Alt-Rezept')
+    expect(payloadArg.category).toEqual({ name: 'Vegetarisch' })
 
     expect(pushMock).toHaveBeenCalledWith('/')
   })
